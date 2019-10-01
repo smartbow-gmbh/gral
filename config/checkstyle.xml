@@ -3,7 +3,7 @@
 
     GRAL: GRAphing Library for Java(R)
 
-    (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
+    (C) Copyright 2009-2015 Erich Seifert <dev[at]erichseifert.de>,
     Michael Seifert <michael[at]erichseifert.de>
 
     This file is part of GRAL.
@@ -22,7 +22,6 @@
     along with GRAL.  If not, see <http://www.gnu.org/licenses/>.
 
 -->
-
 <!DOCTYPE module PUBLIC
           "-//Checkstyle//DTD Checkstyle Configuration 1.2//EN"
           "https://checkstyle.org/dtds/configuration_1_2.dtd">

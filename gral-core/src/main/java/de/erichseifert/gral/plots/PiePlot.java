@@ -95,7 +95,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 	/** Key for specifying the tangential axis of a pie plot. */
 	public static final String AXIS_TANGENTIAL = "tangential"; //$NON-NLS-1$
 
-	/** Key for specifying {@link java.awt.Point2D} instance defining the
+	/** Key for specifying {@link java.awt.geom.Point2D} instance defining the
 	center of the pie. The coordinates must be relative to the plot area
 	dimensions, i.e. 0.0 means left/top, 0.5 means the center, and 1.0 means
 	right/bottom. */
@@ -598,9 +598,6 @@ public class PiePlot extends AbstractPlot implements Navigable {
          */
 		protected void drawValueLabel(DrawingContext context, Slice slice,
 				double radius, Row row, int col) {
-            if (sum == 0.0) {
-                return;
-            }
             Comparable<?> value = row.get(col);
 
             // Formatting

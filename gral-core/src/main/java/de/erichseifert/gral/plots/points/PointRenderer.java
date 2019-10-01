@@ -48,6 +48,9 @@ public interface PointRenderer extends SettingsStorage {
 	/** Key for specifying a {@link Boolean} value whether the data
 	value of a point is displayed or not. */
 	Key VALUE_DISPLAYED = new Key("point.value.displayed"); //$NON-NLS-1$
+	/** Key for specifying a {@link Boolean} value whether the absolute value (as
+	 * integer) of a point is displayed or not. */
+	Key VALUE_DISPLAY_ABSOLUTE_NUMBER = new Key("point.value.absolute");
 	/** Key for specifying a {@link Integer} value for the index of
 	the column that contains the displayed values. */
 	Key VALUE_COLUMN = new Key("point.value.column"); //$NON-NLS-1$

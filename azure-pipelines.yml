@@ -1,0 +1,51 @@
+# Gradle
+# Build your Java project and run tests with Gradle using a Gradle wrapper script.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+- master
+- 0_9_0
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- group: Security
+
+steps:
+- task: DownloadSecureFile@1
+  name: signingkey
+  inputs:
+    secureFile: 'signingkey.asc'
+- task: DownloadSecureFile@1
+  name: signingkey_private
+  inputs:
+    secureFile: 'signingkey.private.asc'
+- script: |-
+    sudo apt-get update
+    sudo apt-get install gnupg
+    mkdir -p $(Agent.HomeDirectory)/gpg
+    gpg --batch --import $(signingkey.secureFilePath)
+    gpg --batch --allow-secret-key-import --import $(signingkey_private.secureFilePath)
+  displayName: 'Installing gpg'
+- task: Gradle@2
+  inputs:
+    options: >-
+        -x jmh
+        -PmavenUsername=$(ARTIFACTORY_USERNAME)
+        -PmavenPassword=$(ARTIFACTORY_PASSWORD)
+        -PmavenSnapshotsRepositoryUrl=$(ARTIFACTORY_URL)/$(ARTIFACTORY_SNAPSHOT_REPO)
+        -PmavenStagingRepositoryUrl=$(ARTIFACTORY_URL)/$(ARTIFACTORY_REPO)
+        -Psigning.gnupg.useLegacyGpg=true
+        -Psigning.gnupg.keyName=$(signingkey_id)
+        -Psigning.gnupg.passphrase=$(signingkey_passphrase)
+    tasks: 'uploadArchives'
+    workingDirectory: ''
+    gradleWrapperFile: 'gradlew'
+    gradleOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    testResultsFiles: '**/TEST-*.xml'

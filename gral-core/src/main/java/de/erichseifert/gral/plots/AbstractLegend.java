@@ -123,7 +123,7 @@ public abstract class AbstractLegend extends StylableContainer
          * @param font           Font for the description text.
          */
 		public Item(Row row, LegendSymbolRenderer symbolRenderer,
-				String labelText, Font font) {
+				String labelText, Font font, Paint paint) {
             double fontSize = font.getSize2D();
             setLayout(new EdgeLayout(fontSize, 0.0));
 
@@ -239,14 +239,14 @@ public abstract class AbstractLegend extends StylableContainer
         for (Row row : getEntries(source)) {
             String label = getLabel(row);
             Font font = this.<Font>getSetting(FONT);
-            Item item = getItem(row, this, label, font, this.<Paint>getSetting(LABEL_COLOR));
+            Item item = getItem(row, this, label, font);
             add(item);
             components.put(row, item);
         }
         invalidate();
     }
 
-    public Item getItem(Row row, LegendSymbolRenderer symbolRenderer, String labelText, Font font, Paint paint) {
+    public Item getItem(Row row, LegendSymbolRenderer symbolRenderer, String labelText, Font font) {
         return new Item(row, this, labelText, font, this.<Paint>getSetting(LABEL_COLOR));
     }
 

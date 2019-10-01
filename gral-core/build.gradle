@@ -1,0 +1,150 @@
+import proguard.gradle.ProGuardTask
+
+description = 'GRAL core'
+
+buildscript {
+	repositories {
+		maven {
+			url "https://plugins.gradle.org/m2/"
+		}
+	}
+	dependencies {
+		classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.8'
+	}
+}
+apply plugin: 'me.champeau.gradle.jmh'
+
+dependencies {
+	testCompile 'junit:junit:4.12'
+	jmh 'commons-io:commons-io:2.4'
+	testRuntime 'org.slf4j:slf4j-log4j12:1.7.26'  // Required for Cobertura
+}
+
+buildscript {
+	repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+	}
+	dependencies {
+		classpath 'net.sf.proguard:proguard-gradle:6.0.+'
+		classpath 'net.saliman:gradle-cobertura-plugin:2.6.+'
+		classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.+'
+	}
+}
+
+apply plugin: 'net.saliman.cobertura'
+cobertura.coverageFormats = ['html', 'xml']
+
+apply plugin: 'com.github.kt3k.coveralls'
+
+task report {
+	dependsOn = ['cobertura', check]
+	description = 'Generates reports.'
+	group = 'Report'
+
+	tasks.withType(Pmd).each {pmdTask ->
+		pmdTask.ignoreFailures = true
+	}
+	tasks.withType(Checkstyle).each {checkstyleTask ->
+		checkstyleTask.ignoreFailures = true
+		checkstyleTask.showViolations = false
+	}
+}
+
+task shrinkJar(type: ProGuardTask, dependsOn: jar) {
+	description = 'Uses ProGuard to reduce the code size of this project.'
+	group = 'Build'
+	// Configure ProGuard
+	configuration "${projectDir}/src/etc/proguard.conf"
+	target targetCompatibility.toString()
+	injars configurations.runtimeClasspath.resolve(), filter: '!META-INF/**'
+	injars jar.archivePath
+	outjars "${libsDir}/shrunk/${jar.archiveName}"
+	// Determine the location of the Java runtime (required for ProGuard)
+	def javaHome = System.getProperty('java.home')
+	if (JavaVersion.current() <= JavaVersion.VERSION_1_8) {
+		if (file("${javaHome}/lib/rt.jar").exists()) {
+			libraryjars "${javaHome}/lib/rt.jar"
+		} else if (file("${javaHome}/bundle/Classes/classes.jar").exists()) {
+			libraryjars "${javaHome}/bundle/Classes/classes.jar"
+		}
+	} else {
+		libraryjars "${javaHome}/jmods/java.base.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+		libraryjars "${javaHome}/jmods/java.desktop.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+		libraryjars "${javaHome}/jmods/java.sql.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+		libraryjars "${javaHome}/jmods/java.xml.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+	} 
+}
+
+task javadocJar(type: Jar) {
+	description = 'Assembles a jar archive containing the API doc.'
+	group = 'Build'
+	from javadoc
+	classifier 'javadoc'
+}
+
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+artifacts {
+	archives shrinkJar.getOutJarFileCollection().getSingleFile(), sourceJar, javadocJar
+}
+
+signing {
+	required { gradle.taskGraph.hasTask('uploadArchives') }
+  useGpgCmd()
+	sign configurations.archives
+}
+
+uploadArchives {
+	repositories {
+		mavenDeployer {
+			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+			repository(url: "${mavenStagingRepositoryUrl}") {
+				authentication(userName: mavenUsername, password: mavenPassword)
+			}
+
+			snapshotRepository(url: "${mavenSnapshotsRepositoryUrl}") {
+				authentication(userName: mavenUsername, password: mavenPassword)
+			}
+
+			pom.project {
+				name rootProject.name
+				packaging 'jar'
+				description rootProject.description
+				url website
+				inceptionYear inceptionYear
+				licenses {
+					license {
+						name 'GNU Library or Lesser General Public License (LGPL)'
+						url 'http://www.gnu.org/licenses/lgpl.txt'
+					}
+				}
+				developers {
+					developer {
+						id owner1_id
+						name owner1_name
+						email owner1_email
+					}
+					developer {
+						id owner2_id
+						name owner2_name
+						email owner2_email
+					}
+				}
+				scm {
+					connection 'scm:git:git://github.com/eseifert/gral.git'
+					developerConnection 'scm:git:git@github.com:eseifert/gral.git'
+					url website
+				}
+				issueManagement {
+					system 'GitHub Issues'
+					url website
+				}
+			}
+		}
+	}
+}
+signArchives.dependsOn(shrinkJar)
