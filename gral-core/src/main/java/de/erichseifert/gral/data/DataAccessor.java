@@ -82,28 +82,32 @@ public abstract class DataAccessor
 	 */
 	public abstract int size();
 
-	@Override
-	public boolean equals(Object obj) {
-		if (!(obj instanceof DataAccessor)) {
-			return false;
-		}
-		DataAccessor r = (DataAccessor) obj;
-		int size = size();
-		if (r.size() != size) {
-			return false;
-		}
-		for (int i = 0; i < size; i++) {
-			if (!r.get(i).equals(get(i))) {
-				return false;
-			}
-		}
-		return true;
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof DataAccessor)) {
+            return false;
+        }
+        DataAccessor r = (DataAccessor) obj;
+        int size = size();
+        if (r.size() != size) {
+            return false;
+        }
+        for (int i = 0; i < size; i++) {
+            Comparable<?> otherVal = r.get(i);
+            Comparable<?> thisVal = get(i);
+            if (otherVal != null && !otherVal.equals(thisVal)) {
+                return false;
+            } else if (otherVal == null && thisVal != null) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-	@Override
-	public int hashCode() {
-		return source.hashCode() ^ index;
-	}
+    @Override
+    public int hashCode() {
+        return source.hashCode() ^ index;
+    }
 
 	@Override
 	public String toString() {
@@ -161,5 +165,5 @@ public abstract class DataAccessor
 				throw new UnsupportedOperationException();
 			}
 		};
-	}
+    }
 }

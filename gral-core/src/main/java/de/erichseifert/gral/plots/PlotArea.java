@@ -102,10 +102,12 @@ public abstract class PlotArea extends StylableDrawable {
 	}
 
 	/**
-	 * Draws the data using the specified Graphics2D object.
-	 * @param context Environment used for drawing.
-	 */
-	protected abstract void drawPlot(DrawingContext context);
+     * Draws the data using the specified Graphics2D object.
+     * @param context Environment used for drawing.
+     */
+    protected abstract void drawPlot(DrawingContext context);
+
+    public abstract Plot getPlot();
 
 	/**
 	 * Invoked if a setting has changed.

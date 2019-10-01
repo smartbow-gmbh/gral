@@ -120,22 +120,22 @@ public class BarPlot extends XYPlot {
 		 * Returns the graphical representation to be drawn for the specified data
 		 * value.
 		 * @param data Information on axes, renderers, and values.
-		 * @param shape Outline that describes the point's shape.
-		 * @return Component that can be used to draw the point
-		 */
-		@Override
-		public Drawable getPoint(final PointData data, final Shape shape) {
-			return new AbstractDrawable() {
-				/** Version id for serialization. */
-				private static final long serialVersionUID = -3145112034673683520L;
+         * @param shape Outline that describes the point's shape.
+         * @return Component that can be used to draw the point
+         */
+        @Override
+        public Drawable getPoint(final PointData data, final Shape shape) {
+            return new AbstractDrawable() {
+                /** Version id for serialization. */
+                private static final long serialVersionUID = -3145112034673683520L;
 
-				public void draw(DrawingContext context) {
-					PointRenderer renderer = BarRenderer.this;
+                public void draw(DrawingContext context) {
+                    PointRenderer renderer = BarRenderer.this;
 
-					Row row = data.row;
+                    Row row = data.row;
 
-					Rectangle2D paintBoundaries = null;
-					Graphics2D graphics = context.getGraphics();
+                    Rectangle2D paintBoundaries = null;
+                    Graphics2D graphics = context.getGraphics();
 
 					ColorMapper colors = renderer.<ColorMapper>getSetting(COLOR);
 					Paint paint = colors.get(row.getIndex());
@@ -162,9 +162,9 @@ public class BarPlot extends XYPlot {
 					}
 
 					if (renderer.<Boolean>getSetting(VALUE_DISPLAYED)) {
-						int colValue = renderer.<Integer>getSetting(VALUE_COLUMN);
-						drawValueLabel(context, shape, row, colValue);
-					}
+                        int colValue = renderer.<Integer>getSetting(VALUE_COLUMN);
+                        drawValueLabel(context, shape, row, colValue);
+                    }
 				}
 			};
 		}
@@ -353,49 +353,72 @@ public class BarPlot extends XYPlot {
 	/**
 	 * Creates a new instance and initializes it with the specified
 	 * data sources.
-	 * @param data Data to be displayed.
-	 */
-	public BarPlot(DataSource... data) {
-		super(data);
+     * @param data Data to be displayed.
+     */
+    public BarPlot(DataSource... data) {
+        super(data);
 
-		getPlotArea().setSettingDefault(XYPlotArea2D.GRID_MAJOR_X, false);
-		setSettingDefault(BAR_WIDTH, 1.0);
-		setSettingDefault(BAR_HEIGHT_MIN, 0.0);
-		setSettingDefault(PAINT_ALL_BARS, false);
+        getPlotArea().setSettingDefault(XYPlotArea2D.GRID_MAJOR_X, false);
+        setSettingDefault(BAR_WIDTH, 1.0);
+        setSettingDefault(BAR_HEIGHT_MIN, 0.0);
+        setSettingDefault(PAINT_ALL_BARS, false);
 
-		setLegend(new BarPlotLegend(this));
-	}
+        setLegend(new BarPlotLegend(this));
 
-	@Override
-	public void autoscaleAxis(String axisName) {
-		super.autoscaleAxis(axisName);
+        double max = getAxisMax(AXIS_Y);
+        double tick = 2;
+        /*
+         * calculate new tick-spacing calculates ticks as follows: max < 10 = 2; max
+         * > 10 = 5; max > 50 = 10; max > 100 = 20; max > 200 = 50; max > 500 = 100;
+         * ...
+         */
+        while (true) {
+            if (max >= tick * 10) {
+                tick *= 2;
+                // not very good, but less code than other solutions to come from 4*
+                // to 5*
+                String num = String.valueOf(tick);
+                if (num.startsWith("4")) {
+                    num = num.replaceFirst("4", "5");
+                    tick = Double.valueOf(num);
+                }
+            } else {
+                break;
+            }
+        }
+        getAxisRenderer(AXIS_Y).setSetting(AxisRenderer.TICKS_SPACING, tick);
+    }
 
-		if (AXIS_X.equals(axisName)) {
-			List<DataSource> data = getData();
-			if (data.isEmpty()) {
-				return;
-			}
+    @Override
+    public void autoscaleAxis(String axisName) {
+        super.autoscaleAxis(axisName);
 
-			Axis axisX = getAxis(AXIS_X);
-			if (axisX != null) {
-				double xMin = getAxisMin(AXIS_X);
-				double xMax = getAxisMax(AXIS_X);
+        if (AXIS_X.equals(axisName)) {
+            List<DataSource> data = getData();
+            if (data.isEmpty()) {
+                return;
+            }
+
+            Axis axisX = getAxis(AXIS_X);
+            if (axisX != null) {
+                double xMin = getAxisMin(AXIS_X);
+                double xMax = getAxisMax(AXIS_X);
 				double xMargin = (xMax - xMin)/data.get(0).getRowCount()/2.0;
-				axisX.setRange(xMin - xMargin, xMax + xMargin);
-			}
-		}
-	}
+                axisX.setRange(xMin - xMargin, xMax + xMargin);
+            }
+        }
+    }
 
-	@Override
-	public void add(int index, DataSource source, boolean visible) {
-		super.add(index, source, visible);
+    @Override
+    public void add(int index, DataSource source, boolean visible) {
+        super.add(index, source, visible);
 
-		// Assign default renderers
-		PointRenderer pointRendererDefault = new BarRenderer(this);
-		LineRenderer lineRendererDefault = null;
-		AreaRenderer areaRendererDefault = null;
-		setPointRenderer(source, pointRendererDefault);
-		setLineRenderer(source, lineRendererDefault);
-		setAreaRenderer(source, areaRendererDefault);
-	}
+        // Assign default renderers
+        PointRenderer pointRendererDefault = new BarRenderer(this);
+        LineRenderer lineRendererDefault = null;
+        AreaRenderer areaRendererDefault = null;
+        setPointRenderer(source, pointRendererDefault);
+        setLineRenderer(source, lineRendererDefault);
+        setAreaRenderer(source, areaRendererDefault);
+    }
 }

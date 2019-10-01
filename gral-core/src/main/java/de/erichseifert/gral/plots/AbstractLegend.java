@@ -113,75 +113,81 @@ public abstract class AbstractLegend extends StylableContainer
 		/** Symbol that should be drawn. */
 		private final Drawable symbol;
 		/** Label string that should be drawn. */
-		private final Label label;
+        private final Label label;
 
-		/**
-		 * Creates a new Item object with the specified data source and text.
-		 * @param row Data row to be displayed.
-		 * @param symbolRenderer Renderer for the symbol.
-		 * @param labelText Description text.
-		 * @param font Font for the description text.
-		 */
+        /**
+         * Creates a new Item object with the specified data source and text.
+         * @param row            Data row to be displayed.
+         * @param symbolRenderer Renderer for the symbol.
+         * @param labelText      Description text.
+         * @param font           Font for the description text.
+         */
 		public Item(Row row, LegendSymbolRenderer symbolRenderer,
 				String labelText, Font font) {
-			double fontSize = font.getSize2D();
-			setLayout(new EdgeLayout(fontSize, 0.0));
+            double fontSize = font.getSize2D();
+            setLayout(new EdgeLayout(fontSize, 0.0));
 
-			this.row = row;
+            this.row = row;
 
-			symbol = symbolRenderer.getSymbol(row);
-			add(symbol, Location.WEST);
+            symbol = symbolRenderer.getSymbol(row);
+            add(symbol, Location.WEST);
 
-			label = new Label(labelText);
-			label.setSetting(Label.FONT, font);
-			label.setSetting(Label.ALIGNMENT_X, 0.0);
-			label.setSetting(Label.ALIGNMENT_Y, 0.5);
-			add(label, Location.CENTER);
-		}
+            label = getLabel(labelText);
+            label.setSetting(Label.FONT, font);
+            label.setSetting(Label.ALIGNMENT_X, 0.0);
+            label.setSetting(Label.ALIGNMENT_Y, 0.5);
+            label.setSetting(Label.COLOR, paint);
+            add(label, Location.CENTER);
+        }
 
-		/**
-		 * Returns the row that is displayed by this item.
-		 * @return Displayed data row.
-		 */
-		public Row getRow() {
-			return row;
-		}
-	}
+        /**
+         * Returns the row that is displayed by this item.
+         * @return Displayed data row.
+         */
+        public Row getRow() {
+            return row;
+        }
+
+        public Label getLabel(String text) {
+            return new Label(text);
+        }
+    }
 
 	/**
 	 * Initializes a new instance with a default background color, a border,
 	 * vertical orientation and a gap between the items. The default alignment
 	 * is set to top-left.
 	 */
-	public AbstractLegend() {
-		setInsets(new Insets2D.Double(10.0));
+    public AbstractLegend() {
+        setInsets(new Insets2D.Double(10.0));
 
-		sources = new LinkedHashSet<DataSource>();
-		components = new HashMap<Row, Drawable>();
+        sources = new LinkedHashSet<DataSource>();
+        components = new HashMap<Row, Drawable>();
 
-		setSettingDefault(BACKGROUND, Color.WHITE);
-		setSettingDefault(BORDER, new BasicStroke(1f));
-		setSettingDefault(FONT, Font.decode(null));
-		setSettingDefault(COLOR, Color.BLACK);
-		setSettingDefault(ORIENTATION, Orientation.VERTICAL);
-		setSettingDefault(ALIGNMENT_X, 0.0);
-		setSettingDefault(ALIGNMENT_Y, 0.0);
-		setSettingDefault(GAP, new de.erichseifert.gral.util.Dimension2D.Double(2.0, 0.5));
-		setSettingDefault(SYMBOL_SIZE, new de.erichseifert.gral.util.Dimension2D.Double(2.0, 2.0));
-	}
+        setSettingDefault(BACKGROUND, Color.WHITE);
+        setSettingDefault(BORDER, new BasicStroke(1f));
+        setSettingDefault(FONT, Font.decode(null));
+        setSettingDefault(COLOR, Color.BLACK);
+        setSettingDefault(ORIENTATION, Orientation.VERTICAL);
+        setSettingDefault(ALIGNMENT_X, 0.0);
+        setSettingDefault(ALIGNMENT_Y, 0.0);
+        setSettingDefault(GAP, new de.erichseifert.gral.util.Dimension2D.Double(2.0, 0.5));
+        setSettingDefault(SYMBOL_SIZE, new de.erichseifert.gral.util.Dimension2D.Double(2.0, 2.0));
+        setSettingDefault(LABEL_COLOR, Color.WHITE);
+    }
 
-	/**
-	 * Draws the {@code Drawable} with the specified drawing context.
-	 * @param context Environment used for drawing.
-	 */
-	@Override
-	public void draw(DrawingContext context) {
-		if (components.isEmpty()) {
-			return;
-		}
-		drawBackground(context);
-		drawBorder(context);
-		drawComponents(context);
+    /**
+     * Draws the {@code Drawable} with the specified drawing context.
+     * @param context Environment used for drawing.
+     */
+    @Override
+    public void draw(DrawingContext context) {
+        if (components.isEmpty()) {
+            return;
+        }
+        drawBackground(context);
+        drawBorder(context);
+        drawComponents(context);
 	}
 
 	/**
@@ -213,32 +219,36 @@ public abstract class AbstractLegend extends StylableContainer
 	 * Returns a sequence of items for the specified data source that should be
 	 * added to the legend.
 	 * @param source Data source.
-	 * @return A sequence of items for the specified data source.
-	 */
-	protected abstract Iterable<Row> getEntries(DataSource source);
+     * @return A sequence of items for the specified data source.
+     */
+    protected abstract Iterable<Row> getEntries(DataSource source);
 
-	/**
-	 * Returns the label text for the specified row.
-	 * @param row Data row.
-	 * @return Label text.
-	 */
-	protected abstract String getLabel(Row row);
+    /**
+     * Returns the label text for the specified row.
+     * @param row Data row.
+     * @return Label text.
+     */
+    protected abstract String getLabel(Row row);
 
-	/**
-	 * Adds the specified data source in order to display it.
-	 * @param source data source to be added.
-	 */
-	public void add(DataSource source) {
-		sources.add(source);
-		for (Row row : getEntries(source)) {
-			String label = getLabel(row);
-			Font font = this.<Font>getSetting(FONT);
-			Item item = new Item(row, this, label, font);
-			add(item);
-			components.put(row, item);
-		}
-		invalidate();
-	}
+    /**
+     * Adds the specified data source in order to display it.
+     * @param source data source to be added.
+     */
+    public void add(DataSource source) {
+        sources.add(source);
+        for (Row row : getEntries(source)) {
+            String label = getLabel(row);
+            Font font = this.<Font>getSetting(FONT);
+            Item item = getItem(row, this, label, font, this.<Paint>getSetting(LABEL_COLOR));
+            add(item);
+            components.put(row, item);
+        }
+        invalidate();
+    }
+
+    public Item getItem(Row row, LegendSymbolRenderer symbolRenderer, String labelText, Font font, Paint paint) {
+        return new Item(row, this, labelText, font, this.<Paint>getSetting(LABEL_COLOR));
+    }
 
 	/**
 	 * Returns whether the specified data source was added to the legend.

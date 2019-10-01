@@ -23,6 +23,7 @@ package de.erichseifert.gral.graphics;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -193,23 +194,23 @@ public class DrawableContainer extends AbstractDrawable implements Container {
 		layout();
 	}
 
-	/**
-	 * Recalculates this container's layout.
-	 */
-	public void layout() {
-		if (getLayout() != null) {
-			getLayout().layout(this);
-		}
-	}
+    /**
+     * Recalculates this container's layout.
+     */
+    public void layout() {
+        if (getLayout() != null) {
+            getLayout().layout(this);
+        }
+    }
 
     /**
      * Returns an iterator over the container's elements.
      *
      * @return an Iterator.
      */
-	public Iterator<Drawable> iterator() {
-		return components.iterator();
-	}
+    public Iterator<Drawable> iterator() {
+        return new ArrayList<Drawable>(components).iterator();
+    }
 
 	/**
 	 * Returns the number of components that are stored in this container.
@@ -219,24 +220,24 @@ public class DrawableContainer extends AbstractDrawable implements Container {
 		return components.size();
 	}
 
-	@Override
-	public void setBounds(Rectangle2D bounds) {
-		super.setBounds(bounds);
-		layout();
-	}
+    @Override
+    public void setBounds(Rectangle2D bounds) {
+        super.setBounds(bounds);
+        layout();
+    }
 
-	@Override
-	public void setBounds(double x, double y, double width, double height) {
-		super.setBounds(x, y, width, height);
-		layout();
-	}
+    @Override
+    public void setBounds(double x, double y, double width, double height) {
+        super.setBounds(x, y, width, height);
+        layout();
+    }
 
-	@Override
-	public Dimension2D getPreferredSize() {
-		if (getLayout() != null) {
-			return getLayout().getPreferredSize(this);
-		}
-		return super.getPreferredSize();
-	}
+    @Override
+    public Dimension2D getPreferredSize() {
+        if (getLayout() != null) {
+            return getLayout().getPreferredSize(this);
+        }
+        return super.getPreferredSize();
+    }
 
 }

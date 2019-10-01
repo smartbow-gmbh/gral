@@ -438,43 +438,50 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 					points.add(dataPoint);
 				}
 
-				if (areaRenderer != null) {
-					Shape area = areaRenderer.getAreaShape(points);
-					Drawable drawable = areaRenderer.getArea(points, area);
-					drawable.draw(context);
-				}
-				if (lineRenderer != null) {
-					Shape line = lineRenderer.getLineShape(points);
-					Drawable drawable = lineRenderer.getLine(points, line);
-					drawable.draw(context);
-				}
-				if (pointRenderer != null) {
-					for (DataPoint point : points) {
-						PointND<Double> pos = point.position;
-						double pointX = pos.get(PointND.X);
-						double pointY = pos.get(PointND.Y);
-						graphics.translate(pointX, pointY);
-						Drawable drawable = point.drawable;
-						drawable.draw(context);
-						graphics.setTransform(txOffset);
-					}
-				}
-			}
+                if (areaRenderer != null) {
+                    Shape area = areaRenderer.getAreaShape(points);
+                    Drawable drawable = areaRenderer.getArea(points, area);
+                    drawable.draw(context);
+                }
+                if (lineRenderer != null) {
+                    Shape line = lineRenderer.getLineShape(points);
+                    Drawable drawable = lineRenderer.getLine(points, line);
+                    drawable.draw(context);
+                }
+                plot.unregisterDrawables();
+                if (pointRenderer != null) {
+                    for (DataPoint point : points) {
+                        PointND<Double> pos = point.position;
+                        double pointX = pos.get(PointND.X);
+                        double pointY = pos.get(PointND.Y);
+                        graphics.translate(pointX, pointY);
+                        Drawable drawable = point.drawable;
+                        drawable.draw(context);
+                        graphics.setTransform(txOffset);
+                        plot.registerShape(point.shape, pointX + getX(), pointY + getY(), point.data.row);
+                    }
+                }
+            }
 
-			// Reset transformation (offset)
-			graphics.setTransform(txOrig);
+            // Reset transformation (offset)
+            graphics.setTransform(txOrig);
 
-			if (clipOffset != null) {
-				// Reset clipping
-				graphics.setClip(clipBoundsOld);
-			}
-		}
-	}
+            if (clipOffset != null) {
+                // Reset clipping
+                graphics.setClip(clipBoundsOld);
+            }
+        }
 
-	/**
-	 * Class that displays a legend in an {@code XYPlot}.
-	 */
-	public static class XYLegend extends SeriesLegend {
+        @Override
+        public Plot getPlot() {
+            return plot;
+        }
+    }
+
+    /**
+     * Class that displays a legend in an {@code XYPlot}.
+     */
+    public static class XYLegend extends SeriesLegend {
 		/** Version id for serialization. */
 		private static final long serialVersionUID = -4629928754001372002L;
 
@@ -577,76 +584,76 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 	 * @param data Data to be displayed.
 	 */
 	public XYPlot(DataSource... data) {
-		super();
+        super();
 
-		pointRenderers = new HashMap<DataSource, PointRenderer>(data.length);
-		lineRenderers = new HashMap<DataSource, LineRenderer>(data.length);
-		areaRenderers = new HashMap<DataSource, AreaRenderer>(data.length);
+        pointRenderers = new HashMap<DataSource, PointRenderer>(data.length);
+        lineRenderers = new HashMap<DataSource, LineRenderer>(data.length);
+        areaRenderers = new HashMap<DataSource, AreaRenderer>(data.length);
 
-		setPlotArea(new XYPlotArea2D(this));
-		setLegend(new XYLegend(this));
+        setPlotArea(new XYPlotArea2D(this));
+        setLegend(new XYLegend(this));
 
-		// Handle data sources after the renderer lists are initialized
-		for (DataSource source : data) {
-			add(source);
-		}
+        // Handle data sources after the renderer lists are initialized
+        for (DataSource source : data) {
+            add(source);
+        }
 
-		createDefaultAxes();
-		autoscaleAxes();
-		createDefaultAxisRenderers();
+        createDefaultAxes();
+        autoscaleAxes();
+        createDefaultAxisRenderers();
 
-		// Listen for changes of the axis range
-		for (String axisName : getAxesNames()) {
-			getAxis(axisName).addAxisListener(this);
-		}
-	}
+        // Listen for changes of the axis range
+        for (String axisName : getAxesNames()) {
+            getAxis(axisName).addAxisListener(this);
+        }
+    }
 
-	@Override
-	protected void createDefaultAxes() {
-		// Create x axis and y axis by default
-		Axis axisX = new Axis();
-		Axis axisY = new Axis();
-		setAxis(AXIS_X, axisX);
-		setAxis(AXIS_Y, axisY);
-	}
+    @Override
+    protected void createDefaultAxes() {
+        // Create x axis and y axis by default
+        Axis axisX = new Axis();
+        Axis axisY = new Axis();
+        setAxis(AXIS_X, axisX);
+        setAxis(AXIS_Y, axisY);
+    }
 
-	@Override
-	protected void createDefaultAxisRenderers() {
-		// Create renderers for x and y axes by default
-		AxisRenderer axisXRenderer = new LinearRenderer2D();
-		AxisRenderer axisYRenderer = new LinearRenderer2D();
-		setAxisRenderer(AXIS_X, axisXRenderer);
-		setAxisRenderer(AXIS_Y, axisYRenderer);
-	}
+    @Override
+    protected void createDefaultAxisRenderers() {
+        // Create renderers for x and y axes by default
+        AxisRenderer axisXRenderer = new LinearRenderer2D();
+        AxisRenderer axisYRenderer = new LinearRenderer2D();
+        setAxisRenderer(AXIS_X, axisXRenderer);
+        setAxisRenderer(AXIS_Y, axisYRenderer);
+    }
 
-	@Override
-	protected void layoutAxes() {
-		if (getPlotArea() == null) {
-			return;
-		}
+    @Override
+    protected void layoutAxes() {
+        if (getPlotArea() == null) {
+            return;
+        }
 
-		// Set the new shapes first to allow for correct positioning
-		layoutAxisShape(AXIS_X, Orientation.HORIZONTAL);
-		layoutAxisShape(AXIS_X2, Orientation.HORIZONTAL);
-		layoutAxisShape(AXIS_Y, Orientation.VERTICAL);
-		layoutAxisShape(AXIS_Y2, Orientation.VERTICAL);
+        // Set the new shapes first to allow for correct positioning
+        layoutAxisShape(AXIS_X, Orientation.HORIZONTAL);
+        layoutAxisShape(AXIS_X2, Orientation.HORIZONTAL);
+        layoutAxisShape(AXIS_Y, Orientation.VERTICAL);
+        layoutAxisShape(AXIS_Y2, Orientation.VERTICAL);
 
-		// Set bounds with new axis shapes
-		layoutAxisComponent(AXIS_X, Orientation.HORIZONTAL);
-		layoutAxisComponent(AXIS_X2, Orientation.HORIZONTAL);
-		layoutAxisComponent(AXIS_Y, Orientation.VERTICAL);
-		layoutAxisComponent(AXIS_Y2, Orientation.VERTICAL);
-	}
+        // Set bounds with new axis shapes
+        layoutAxisComponent(AXIS_X, Orientation.HORIZONTAL);
+        layoutAxisComponent(AXIS_X2, Orientation.HORIZONTAL);
+        layoutAxisComponent(AXIS_Y, Orientation.VERTICAL);
+        layoutAxisComponent(AXIS_Y2, Orientation.VERTICAL);
+    }
 
-	private void layoutAxisShape(String axisName, Orientation orientation) {
-		Rectangle2D plotBounds = getPlotArea().getBounds();
+    private void layoutAxisShape(String axisName, Orientation orientation) {
+        Rectangle2D plotBounds = getPlotArea().getBounds();
 
-		Drawable comp = getAxisComponent(axisName);
-		AxisRenderer renderer = getAxisRenderer(axisName);
+        Drawable comp = getAxisComponent(axisName);
+        AxisRenderer renderer = getAxisRenderer(axisName);
 
-		if (comp == null || renderer == null) {
-			return;
-		}
+        if (comp == null || renderer == null) {
+            return;
+        }
 
 		Dimension2D size = comp.getPreferredSize();
 

@@ -25,12 +25,15 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Paint;
+import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +48,7 @@ import de.erichseifert.gral.data.Column;
 import de.erichseifert.gral.data.DataChangeEvent;
 import de.erichseifert.gral.data.DataListener;
 import de.erichseifert.gral.data.DataSource;
+import de.erichseifert.gral.data.Row;
 import de.erichseifert.gral.data.statistics.Statistics;
 import de.erichseifert.gral.graphics.Container;
 import de.erichseifert.gral.graphics.Drawable;
@@ -96,127 +100,165 @@ public abstract class AbstractPlot extends StylableContainer
 	/** Container that will store and layout the plot legend. */
 	private final Container legendContainer;
 	/** AbstractPlot legend. */
-	private Legend legend;
+    private Legend legend;
+
+    private Collection<RowShape> shapes;
 
 	/**
 	 * Initializes a new {@code AbstractPlot} instance with the specified data series.
 	 * The series will be visible by default.
-	 * @param series Initial data series to be displayed.
-	 */
-	public AbstractPlot(DataSource... series) {
-		super(new EdgeLayout(20.0, 20.0));
+     * @param series Initial data series to be displayed.
+     */
+    public AbstractPlot(DataSource... series) {
+        super(new EdgeLayout(20.0, 20.0));
+        shapes = new ArrayList<RowShape>();
+        title = new Label(); //$NON-NLS-1$
+        title.setSetting(Label.FONT, Font.decode(null).deriveFont(18f));
 
-		title = new Label(); //$NON-NLS-1$
-		title.setSetting(Label.FONT, Font.decode(null).deriveFont(18f));
+        legendContainer = new DrawableContainer(new OuterEdgeLayout(0.0));
 
-		legendContainer = new DrawableContainer(new OuterEdgeLayout(0.0));
+        dataVisible = new HashSet<DataSource>();
 
-		dataVisible = new HashSet<DataSource>();
+        axes = new HashMap<String, Axis>();
+        axisRenderers = new HashMap<String, AxisRenderer>();
+        axisDrawables = new HashMap<String, Drawable>();
 
-		axes = new HashMap<String, Axis>();
-		axisRenderers = new HashMap<String, AxisRenderer>();
-		axisDrawables = new HashMap<String, Drawable>();
+        mapping = new HashMap<Tuple, String>();
+        axisMin = new HashMap<String, Double>();
+        axisMax = new HashMap<String, Double>();
 
-		mapping = new HashMap<Tuple, String>();
-		axisMin = new HashMap<String, Double>();
-		axisMax = new HashMap<String, Double>();
+        data = new LinkedList<DataSource>();
+        for (DataSource source : series) {
+            add(source);
+        }
 
-		data = new LinkedList<DataSource>();
-		for (DataSource source : series) {
-			add(source);
-		}
+        setSettingDefault(TITLE, null);
+        setSettingDefault(TITLE_FONT, Font.decode(null).deriveFont(18f));
+        setSettingDefault(BACKGROUND, null);
+        setSettingDefault(BORDER, null);
+        setSettingDefault(COLOR, Color.BLACK);
+        setSettingDefault(ANTIALISING, true);
+        setSettingDefault(LEGEND, false);
+        setSettingDefault(LEGEND_LOCATION, Location.CENTER);
+        setSettingDefault(LEGEND_DISTANCE, 2.0);
 
-		setSettingDefault(TITLE, null);
-		setSettingDefault(TITLE_FONT, Font.decode(null).deriveFont(18f));
-		setSettingDefault(BACKGROUND, null);
-		setSettingDefault(BORDER, null);
-		setSettingDefault(COLOR, Color.BLACK);
-		setSettingDefault(ANTIALISING, true);
-		setSettingDefault(LEGEND, false);
-		setSettingDefault(LEGEND_LOCATION, Location.CENTER);
-		setSettingDefault(LEGEND_DISTANCE, 2.0);
+        add(title, Location.NORTH);
+    }
 
-		add(title, Location.NORTH);
-	}
+    /**
+     * Draws the {@code Drawable} with the specified drawing context.
+     * @param context Environment used for drawing
+     */
+    @Override
+    public void draw(DrawingContext context) {
+        Graphics2D graphics = context.getGraphics();
 
-	/**
-	 * Draws the {@code Drawable} with the specified drawing context.
-	 * @param context Environment used for drawing
-	 */
-	@Override
-	public void draw(DrawingContext context) {
-		Graphics2D graphics = context.getGraphics();
-
-		Boolean antialiasing = getSetting(ANTIALISING);
+        Boolean antialiasing = getSetting(ANTIALISING);
 
 		graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
 				(antialiasing != null && antialiasing.booleanValue())
 					? RenderingHints.VALUE_ANTIALIAS_ON
-					: RenderingHints.VALUE_ANTIALIAS_OFF);
+                : RenderingHints.VALUE_ANTIALIAS_OFF);
 
-		Paint bg = getSetting(BACKGROUND);
-		if (bg != null) {
-			GraphicsUtils.fillPaintedShape(graphics, getBounds(), bg, null);
-		}
+        Paint bg = getSetting(BACKGROUND);
+        if (bg != null) {
+            GraphicsUtils.fillPaintedShape(graphics, getBounds(), bg, null);
+        }
 
-		Stroke stroke = getSetting(BORDER);
-		if (stroke != null) {
-			Paint fg = getSetting(COLOR);
+        Stroke stroke = getSetting(BORDER);
+        if (stroke != null) {
+            Paint fg = getSetting(COLOR);
 			GraphicsUtils.drawPaintedShape(
 					graphics, getBounds(), fg, null, stroke);
 		}
 
-		drawComponents(context);
-	}
+        drawComponents(context);
+    }
 
-	/**
-	 * Draws the plot's axes into the specified drawing context.
-	 * @param context Environment used for drawing.
-	 */
-	protected void drawAxes(DrawingContext context) {
-		for (Drawable d : axisDrawables.values()) {
-			if (d != null) {
-				d.draw(context);
-			}
-		}
-	}
+    private static class RowShape {
+        private Shape shape;
+        private double x, y;
+        private Row row;
 
-	/**
-	 * Draws the plot's legend into the specified drawing context.
-	 * @param context Environment used for drawing.
-	 */
-	protected void drawLegend(DrawingContext context) {
-		Boolean isVisible = this.<Boolean>getSetting(LEGEND);
-		if (isVisible == null || !isVisible.booleanValue() || getLegend() == null) {
-			return;
-		}
-		getLegend().draw(context);
-	}
+        public RowShape(Shape shape, double x, double y, Row row) {
+            this.shape = shape;
+            this.x = x;
+            this.y = y;
+            this.row = row;
+        }
 
-	@Override
-	public void layout() {
-		super.layout();
-		layoutAxes();
-		layoutLegend();
-	}
+    }
 
-	/**
-	 * Calculates the bounds of the axes.
-	 */
-	protected void layoutAxes() {
-	}
+    public void registerShape(Shape shape, double x, double y, Row row) {
+        shapes.add(new RowShape(shape, x, y, row));
+    }
 
-	/**
-	 * Calculates the bounds of the legend component.
-	 */
-	protected void layoutLegend() {
-		if (getPlotArea() == null) {
-			return;
-		}
-		Container legendContainer = getLegendContainer();
-		Rectangle2D plotBounds = getPlotArea().getBounds();
-		legendContainer.setBounds(plotBounds);
-	}
+    public void unregisterDrawables() {
+        shapes.clear();
+    }
+
+    public Row getRowAt(Point point) {
+        for (RowShape rowShape : shapes) {
+            int mouseX = point.x;
+            int mouseY = point.y;
+            mouseX = (int) (mouseX - rowShape.x);
+            mouseY = (int) (mouseY - rowShape.y);
+            Point p = new Point(mouseX, mouseY);
+            if (rowShape.shape.contains(p)) {
+                return rowShape.row;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Draws the plot's axes into the specified drawing context.
+     * @param context Environment used for drawing.
+     */
+    protected void drawAxes(DrawingContext context) {
+        for (Drawable d : axisDrawables.values()) {
+            if (d != null) {
+                d.draw(context);
+            }
+        }
+    }
+
+    /**
+     * Draws the plot's legend into the specified drawing context.
+     * @param context Environment used for drawing.
+     */
+    protected void drawLegend(DrawingContext context) {
+        Boolean isVisible = this.<Boolean>getSetting(LEGEND);
+        if (isVisible == null || !isVisible.booleanValue() || getLegend() == null) {
+            return;
+        }
+        getLegend().draw(context);
+    }
+
+    @Override
+    public void layout() {
+        super.layout();
+        layoutAxes();
+        layoutLegend();
+    }
+
+    /**
+     * Calculates the bounds of the axes.
+     */
+    protected void layoutAxes() {
+    }
+
+    /**
+     * Calculates the bounds of the legend component.
+     */
+    protected void layoutLegend() {
+        if (getPlotArea() == null) {
+            return;
+        }
+        Container legendContainer = getLegendContainer();
+        Rectangle2D plotBounds = getPlotArea().getBounds();
+        legendContainer.setBounds(plotBounds);
+    }
 
 	/**
 	 * Returns the axis with the specified name.

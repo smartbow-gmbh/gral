@@ -21,6 +21,7 @@
  */
 package de.erichseifert.gral.ui;
 
+import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -41,6 +42,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -50,14 +52,17 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 
+import de.erichseifert.gral.data.Row;
 import de.erichseifert.gral.graphics.Container;
 import de.erichseifert.gral.graphics.Drawable;
+import de.erichseifert.gral.graphics.DrawableContainer;
 import de.erichseifert.gral.graphics.DrawingContext;
 import de.erichseifert.gral.io.IOCapabilities;
 import de.erichseifert.gral.io.plots.DrawableWriter;
 import de.erichseifert.gral.io.plots.DrawableWriterFactory;
 import de.erichseifert.gral.navigation.Navigable;
 import de.erichseifert.gral.navigation.Navigator;
+import de.erichseifert.gral.plots.PlotArea;
 import de.erichseifert.gral.util.Messages;
 import de.erichseifert.gral.util.PointND;
 
@@ -104,25 +109,33 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	/** Object to be used as listener for panning actions. */
 	private NavigationMoveListener panListener;
 
+    private ArrayList<Listener> listeners;
+
+    public interface Listener {
+        void onRowClick(Row row);
+
+        void onMouseOver(Row row);
+    }
+
 	/**
 	 * Listener class for zooming actions.
 	 */
 	private final static class MouseZoomListener extends MouseAdapter
 			implements MouseWheelListener, Serializable {
 		/** Version id for serialization. */
-		private static final long serialVersionUID = -7323541053291673122L;
+        private static final long serialVersionUID = -7323541053291673122L;
 
-		private final InteractivePanel panel;
+        private final InteractivePanel panel;
 
-		public MouseZoomListener(InteractivePanel panel) {
-			this.panel = panel;
-		}
+        public MouseZoomListener(InteractivePanel panel) {
+            this.panel = panel;
+        }
 
-		@Override
-		public void mouseWheelMoved(MouseWheelEvent e) {
-			Point2D point = e.getPoint();
-			panel.zoom(point, -e.getWheelRotation());
-		}
+        @Override
+        public void mouseWheelMoved(MouseWheelEvent e) {
+            Point2D point = e.getPoint();
+            panel.zoom(point, -e.getWheelRotation());
+        }
 
 		@Override
 		public void mouseClicked(MouseEvent e) {
@@ -132,19 +145,19 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 				panel.zoom(point, 1);
 			}
 		}
-	}
+    }
 
 	/**
 	 * Creates a new panel instance and initializes it with a
 	 * drawable component.
 	 * @param drawable Drawable component.
 	 */
-	@SuppressWarnings("serial")
-	public InteractivePanel(Drawable drawable) {
-		super(drawable);
-
-		printerJob = PrinterJob.getPrinterJob();
-		printerJob.setPrintable(this);
+    @SuppressWarnings("serial")
+    public InteractivePanel(Drawable drawable) {
+        super(drawable);
+        listeners = new ArrayList<Listener>();
+        printerJob = PrinterJob.getPrinterJob();
+        printerJob.setPrintable(this);
 
 		List<IOCapabilities> exportFormats = DrawableWriterFactory.getInstance()
 			.getCapabilities();
@@ -152,61 +165,61 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 		exportImageChooser.setDialogTitle(Messages.getString(
 				"InteractivePanel.exportImageTitle")); //$NON-NLS-1$
 
-		actions = new ActionMap();
-		actions.put("zoomIn", new AbstractAction(Messages.getString( //$NON-NLS-1$
-			"InteractivePanel.zoomIn")) { //$NON-NLS-1$
-			public void actionPerformed(ActionEvent e) {
-				zoom(popupMenuPos, 1);
-			}
-		});
-		actions.put("zoomOut", new AbstractAction(Messages.getString( //$NON-NLS-1$
-			"InteractivePanel.zoomOut")) { //$NON-NLS-1$
-			public void actionPerformed(ActionEvent e) {
-				zoom(popupMenuPos, -1);
-			}
-		});
-		actions.put("resetView", new AbstractAction(Messages.getString( //$NON-NLS-1$
-				"InteractivePanel.resetView")) { //$NON-NLS-1$
-			public void actionPerformed(ActionEvent e) {
-				resetZoom(popupMenuPos);
-			}
-		});
-		actions.put("exportImage", new AbstractAction(Messages.getString( //$NON-NLS-1$
-				"InteractivePanel.exportImage")) { //$NON-NLS-1$
-			public void actionPerformed(ActionEvent e) {
+        actions = new ActionMap();
+        actions.put("zoomIn", new AbstractAction(Messages.getString( //$NON-NLS-1$
+                "InteractivePanel.zoomIn")) { //$NON-NLS-1$
+            public void actionPerformed(ActionEvent e) {
+                zoom(popupMenuPos, 1);
+            }
+        });
+        actions.put("zoomOut", new AbstractAction(Messages.getString( //$NON-NLS-1$
+                "InteractivePanel.zoomOut")) { //$NON-NLS-1$
+            public void actionPerformed(ActionEvent e) {
+                zoom(popupMenuPos, -1);
+            }
+        });
+        actions.put("resetView", new AbstractAction(Messages.getString( //$NON-NLS-1$
+                "InteractivePanel.resetView")) { //$NON-NLS-1$
+            public void actionPerformed(ActionEvent e) {
+                resetZoom(popupMenuPos);
+            }
+        });
+        actions.put("exportImage", new AbstractAction(Messages.getString( //$NON-NLS-1$
+                "InteractivePanel.exportImage")) { //$NON-NLS-1$
+            public void actionPerformed(ActionEvent e) {
 				int ret = exportImageChooser.showSaveDialog(
 						InteractivePanel.this);
-				// Clear artifacts of the file chooser
-				repaint();
-				// If the user aborted we can stop
-				if (ret != JFileChooser.APPROVE_OPTION) {
-					return;
-				}
-				// If the user didn't select a file we can stop
-				File file = exportImageChooser.getSelectedFile();
-				if (file == null) {
-					return;
-				}
-				// If the selected an existing file we ask for permission
-				// to overwrite it
-				else if (file.exists()) {
+                // Clear artifacts of the file chooser
+                repaint();
+                // If the user aborted we can stop
+                if (ret != JFileChooser.APPROVE_OPTION) {
+                    return;
+                }
+                // If the user didn't select a file we can stop
+                File file = exportImageChooser.getSelectedFile();
+                if (file == null) {
+                    return;
+                }
+                // If the selected an existing file we ask for permission
+                // to overwrite it
+                else if (file.exists()) {
 					int retOverwrite = JOptionPane.showConfirmDialog(
 						InteractivePanel.this,
 						Messages.getString("InteractivePanel.exportExistsWarning"), //$NON-NLS-1$
 						Messages.getString("InteractivePanel.warning"), //$NON-NLS-1$
 						JOptionPane.YES_NO_OPTION
 					);
-					// Clear artifacts of the confirm dialog
-					repaint();
-					if (retOverwrite == JOptionPane.NO_OPTION) {
-						return;
-					}
-				}
+                    // Clear artifacts of the confirm dialog
+                    repaint();
+                    if (retOverwrite == JOptionPane.NO_OPTION) {
+                        return;
+                    }
+                }
 
-				// Export current view to the selected file
-				Drawable d = getDrawable();
-				ExportDialog ed = new ExportDialog(InteractivePanel.this, d);
-				ed.setVisible(true);
+                // Export current view to the selected file
+                Drawable d = getDrawable();
+                ExportDialog ed = new ExportDialog(InteractivePanel.this, d);
+                ed.setVisible(true);
 				if (!ed.getUserAction().equals(
 						ExportDialog.UserAction.APPROVE)) {
 					return;
@@ -215,50 +228,73 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 					exportImageChooser.getFileFilter();
 				export(d, filter.getWriterCapabilities().getMimeType(),
 					file, ed.getDocumentBounds());
-			}
-		});
-		actions.put("print", new AbstractAction(Messages.getString( //$NON-NLS-1$
-				"InteractivePanel.print")) { //$NON-NLS-1$
-			public void actionPerformed(ActionEvent e) {
-				if (printerJob.printDialog()) {
-					try {
-						printerJob.print();
-					} catch (PrinterException ex) {
+            }
+        });
+        actions.put("print", new AbstractAction(Messages.getString( //$NON-NLS-1$
+                "InteractivePanel.print")) { //$NON-NLS-1$
+            public void actionPerformed(ActionEvent e) {
+                if (printerJob.printDialog()) {
+                    try {
+                        printerJob.print();
+                    } catch (PrinterException ex) {
 						// TODO Show error dialog
-						ex.printStackTrace();
-					}
-				}
-			}
-		});
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
 
-		popupMenuEnabled = true;
-		addMouseListener(new PopupListener());
+        popupMenuEnabled = true;
+        addMouseListener(new PopupListener());
+        NavigationListener navigationListener = new NavigationListener();
+        addMouseListener(navigationListener);
+        addMouseMotionListener(navigationListener);
 
-		setZoomable(true);
-		setPannable(true);
-	}
+        setZoomable(true);
+        setPannable(true);
+    }
 
-	/**
-	 * Method that returns the popup menu for a given mouse event. It will be
-	 * called on each popup event if the menu is enabled. If the menu is static
-	 * caching can be used to prevent unnecessary generation of menu objects.
+    public void addListener(Listener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeListener(Listener listener) {
+        listeners.remove(listener);
+    }
+
+    protected void fireRowClicked(Row row) {
+        for (Listener listener : listeners) {
+            listener.onRowClick(row);
+        }
+    }
+
+    protected void fireMouseOver(Row row) {
+        for (Listener listener : listeners) {
+            listener.onMouseOver(row);
+        }
+    }
+
+    /**
+     * Method that returns the popup menu for a given mouse event. It will be
+     * called on each popup event if the menu is enabled. If the menu is static
+     * caching can be used to prevent unnecessary generation of menu objects.
 	 * @param e Mouse event that triggered the popup menu.
 	 * @return A popup menu instance, or {@code null} if no popup menu should be shown.
 	 * @see #isPopupMenuEnabled()
 	 * @see #setPopupMenuEnabled(boolean)
-	 */
-	protected JPopupMenu getPopupMenu(MouseEvent e) {
-		if (popupMenu == null) {
-			popupMenu = new JPopupMenu();
-			popupMenu.add(actions.get("zoomIn")); //$NON-NLS-1$
-			popupMenu.add(actions.get("zoomOut")); //$NON-NLS-1$
-			popupMenu.add(actions.get("resetView")); //$NON-NLS-1$
-			popupMenu.addSeparator();
-			popupMenu.add(actions.get("exportImage")); //$NON-NLS-1$
-			popupMenu.add(actions.get("print")); //$NON-NLS-1$
-		}
-		return popupMenu;
-	}
+     */
+    protected JPopupMenu getPopupMenu(MouseEvent e) {
+        if (popupMenu == null) {
+            popupMenu = new JPopupMenu();
+            popupMenu.add(actions.get("zoomIn")); //$NON-NLS-1$
+            popupMenu.add(actions.get("zoomOut")); //$NON-NLS-1$
+            popupMenu.add(actions.get("resetView")); //$NON-NLS-1$
+            popupMenu.addSeparator();
+            popupMenu.add(actions.get("exportImage")); //$NON-NLS-1$
+            popupMenu.add(actions.get("print")); //$NON-NLS-1$
+        }
+        return popupMenu;
+    }
 
 	/**
 	 * Returns whether a popup menu will be shown by this panel when the user
@@ -266,10 +302,10 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	 * operating system of the user.
 	 * @return {@code true} when a popup menu will be shown,
 	 *         otherwise {@code false}.
-	 */
-	public boolean isPopupMenuEnabled() {
-		return popupMenuEnabled;
-	}
+     */
+    public boolean isPopupMenuEnabled() {
+        return popupMenuEnabled;
+    }
 
 	/**
 	 * Sets whether a popup menu will be shown by this panel when the user
@@ -277,10 +313,10 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	 * operating system of the user.
 	 * @param popupMenuEnabled {@code true} when a popup menu should be
 	 *        shown, otherwise {@code false}.
-	 */
-	public void setPopupMenuEnabled(boolean popupMenuEnabled) {
-		this.popupMenuEnabled = popupMenuEnabled;
-	}
+     */
+    public void setPopupMenuEnabled(boolean popupMenuEnabled) {
+        this.popupMenuEnabled = popupMenuEnabled;
+    }
 
 	/**
 	 * Zooms a navigable object in (positive values) or out (negative values).
@@ -288,52 +324,52 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	 * @param times Number of times the navigable object will be zoomed.
 	 *        Positive values zoom in, negative values zoom out.
 	 */
-	private void zoom(Point2D point, int times) {
-		if (!isZoomable()) {
-			return;
-		}
+    private void zoom(Point2D point, int times) {
+        if (!isZoomable()) {
+            return;
+        }
 
-		Navigable navigable = InteractivePanel.getNavigableAt(getDrawable(), point);
-		if (navigable == null) {
-			return;
-		}
+        Navigable navigable = InteractivePanel.getNavigableAt(getDrawable(), point);
+        if (navigable == null) {
+            return;
+        }
 
-		Navigator navigator = navigable.getNavigator();
-		if (times >= 0) {
-			for (int i = 0; i < times; i++) {
-				navigator.zoomOut();
-			}
-		} else {
-			for (int i = 0; i < -times; i++) {
-				navigator.zoomIn();
-			}
-		}
+        Navigator navigator = navigable.getNavigator();
+        if (times >= 0) {
+            for (int i = 0; i < times; i++) {
+                navigator.zoomOut();
+            }
+        } else {
+            for (int i = 0; i < -times; i++) {
+                navigator.zoomIn();
+            }
+        }
 
-		repaint();
-	}
+        repaint();
+    }
 
-	private void resetZoom(Point2D point) {
-		if (!isZoomable()) {
-			return;
-		}
+    private void resetZoom(Point2D point) {
+        if (!isZoomable()) {
+            return;
+        }
 
-		Navigable navigable = InteractivePanel.getNavigableAt(getDrawable(), point);
-		if (navigable == null) {
-			return;
-		}
+        Navigable navigable = InteractivePanel.getNavigableAt(getDrawable(), point);
+        if (navigable == null) {
+            return;
+        }
 
-		Navigator navigator = navigable.getNavigator();
-		navigator.reset();
+        Navigator navigator = navigable.getNavigator();
+        navigator.reset();
 
-		repaint();
-	}
+        repaint();
+    }
 
-	/**
-	 * Method that exports the current view to a file using a specified file type.
-	 * @param component Drawable that will be exported.
-	 * @param mimeType File format as MIME type string.
-	 * @param file File to export to.
-	 * @param documentBounds Document boundary rectangle
+    /**
+     * Method that exports the current view to a file using a specified file type.
+     * @param component      Drawable that will be exported.
+     * @param mimeType       File format as MIME type string.
+     * @param file           File to export to.
+     * @param documentBounds Document boundary rectangle
 	 */
 	private void export(Drawable component, String mimeType, File file,
 			Rectangle2D documentBounds) {
@@ -342,10 +378,10 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 			destination = new FileOutputStream(file);
 		} catch (FileNotFoundException ex) {
 			// TODO Auto-generated catch block
-			ex.printStackTrace();
-			return;
-		}
-		DrawableWriter writer = DrawableWriterFactory.getInstance().get(mimeType);
+            ex.printStackTrace();
+            return;
+        }
+        DrawableWriter writer = DrawableWriterFactory.getInstance().get(mimeType);
 		try {
 			writer.write(component, destination,
 				documentBounds.getX(), documentBounds.getY(),
@@ -360,84 +396,131 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 				// TODO Auto-generated catch block
 				ex2.printStackTrace();
 			}
-		}
-	}
+        }
+    }
 
-	/**
-	 * Class that is responsible for showing the popup menu.
-	 */
-	private class PopupListener extends MouseAdapter {
-	    @Override
-		public void mousePressed(MouseEvent e) {
-	        showPopup(e);
-	    }
+    /**
+     * Class that is responsible for showing the popup menu.
+     */
+    private class PopupListener extends MouseAdapter {
+        @Override
+        public void mousePressed(MouseEvent e) {
+            showPopup(e);
+        }
 
-	    @Override
-		public void mouseReleased(MouseEvent e) {
-	        showPopup(e);
-	    }
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            showPopup(e);
+        }
 
-	    private void showPopup(MouseEvent e) {
-	        if (!isPopupMenuEnabled() || !e.isPopupTrigger()) {
-	        	return;
-	        }
-        	JPopupMenu menu = getPopupMenu(e);
-        	if (menu == null) {
-        		return;
-        	}
-        	popupMenuPos = e.getPoint();
-    		menu.show(e.getComponent(), e.getX(), e.getY());
-	    }
-	}
+        private void showPopup(MouseEvent e) {
+            if (!isPopupMenuEnabled() || !e.isPopupTrigger()) {
+                return;
+            }
+            JPopupMenu menu = getPopupMenu(e);
+            if (menu == null) {
+                return;
+            }
+            popupMenuPos = e.getPoint();
+            menu.show(e.getComponent(), e.getX(), e.getY());
+        }
+    }
 
-	/**
-	 * Class that handles mouse moves for navigation.
-	 */
+    private class NavigationListener extends MouseAdapter {
+
+        private Row getRow(Point point) {
+            Drawable drawable = getDrawable();
+            if (drawable instanceof DrawableContainer) {
+                DrawableContainer c = (DrawableContainer) drawable;
+                Drawable drawableAt = c.getDrawableAt(point);
+                if (drawableAt instanceof PlotArea) {
+                    PlotArea plotArea = (PlotArea) drawableAt;
+                    Row row = plotArea.getPlot().getRowAt(point);
+                    if (row != null) {
+                        return row;
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            Row row = getRow(e.getPoint());
+            if (row != null) {
+                fireRowClicked(row);
+            }
+        }
+
+        private Row prevRow = null;
+
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            if (listeners.isEmpty()) {
+                return;
+            }
+            Row curRow = getRow(e.getPoint());
+            if (curRow != prevRow) {
+                prevRow = curRow;
+                fireMouseOver(curRow);
+                if (curRow == null) {
+                    setCursor(Cursor.getDefaultCursor());
+                } else {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                }
+            }
+        }
+
+    }
+
+    /**
+     * Class that handles mouse moves for navigation.
+     */
 	private static class NavigationMoveListener extends MouseAdapter {
 		/** A reference to the panel for refreshing. */
 		private final InteractivePanel panel;
 		/** AbstractPlot that will be changed by this class. */
 		private Navigable navigable;
 		/** Previously clicked point or {@code null}. */
-		private Point posPrev;
+        private Point posPrev;
 
-		/**
-		 * Creates a new listener and initializes it with a panel.
-		 * @param panel InteractivePanel that should be refreshed.
-		 */
-		public NavigationMoveListener(InteractivePanel panel) {
-			this.panel = panel;
-		}
+        /**
+         * Creates a new listener and initializes it with a panel.
+         * @param panel InteractivePanel that should be refreshed.
+         */
+        public NavigationMoveListener(InteractivePanel panel) {
+            this.panel = panel;
+        }
 
-		@Override
-		public void mousePressed(MouseEvent e) {
-			Point point = e.getPoint();
-			navigable = InteractivePanel.getNavigableAt(panel.getDrawable(), point);
-			posPrev = point;
-		}
+        @Override
+        public void mousePressed(MouseEvent e) {
+            Point point = e.getPoint();
+            navigable = InteractivePanel.getNavigableAt(panel.getDrawable(), point);
+            posPrev = point;
+        }
 
-		@Override
-		public void mouseDragged(MouseEvent e) {
-			if (navigable == null) {
-				return;
-			}
+        @Override
+        public void mouseDragged(MouseEvent e) {
+            if (navigable == null) {
+                return;
+            }
 
-			// Calculate distance that the current view was dragged
-			// (screen units)
-			Point pos = e.getPoint();
-			Navigator navigator = navigable.getNavigator();
+            // Calculate distance that the current view was dragged
+            // (screen units)
+            Point pos = e.getPoint();
+            Navigator navigator = navigable.getNavigator();
 
-			int dx = pos.x - posPrev.x;
-			int dy = pos.y - posPrev.y;
-			posPrev = pos;
+            int dx = pos.x - posPrev.x;
+            int dy = pos.y - posPrev.y;
+            posPrev = pos;
 
-			if (Math.abs(dx) > MIN_DRAG || Math.abs(dy) > MIN_DRAG) {
-				PointND<Integer> deltas = new PointND<Integer>(dx, dy);
-				navigator.pan(deltas);
-				panel.repaint();
-			}
-		}
-	}
+            if (Math.abs(dx) > MIN_DRAG || Math.abs(dy) > MIN_DRAG) {
+                PointND<Integer> deltas = new PointND<Integer>(dx, dy);
+                navigator.pan(deltas);
+                panel.repaint();
+            }
+        }
+    }
 
 	/**
      * Prints the page at the specified index into the specified
@@ -453,13 +536,13 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	 */
 	public int print(Graphics g, PageFormat pageFormat, int pageIndex)
 			throws PrinterException {
-		if (pageIndex > 0) {
+        if (pageIndex > 0) {
             return Printable.NO_SUCH_PAGE;
         }
 
-		Graphics2D graphics = (Graphics2D) g;
-		AffineTransform txOld = graphics.getTransform();
-		graphics.scale(MM_PER_PX, MM_PER_PX);
+        Graphics2D graphics = (Graphics2D) g;
+        AffineTransform txOld = graphics.getTransform();
+        graphics.scale(MM_PER_PX, MM_PER_PX);
 
 		Rectangle2D boundsOld = getDrawable().getBounds();
 		Rectangle2D pageBounds = new Rectangle2D.Double(
