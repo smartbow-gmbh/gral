@@ -92,7 +92,8 @@ artifacts {
 }
 
 signing {
-	required { hasProperty('signing.keyId') && gradle.taskGraph.hasTask('uploadArchives') }
+	required { gradle.taskGraph.hasTask('uploadArchives') }
+  useGpgCmd()
 	sign configurations.archives
 }
 
@@ -101,12 +102,12 @@ uploadArchives {
 		mavenDeployer {
 			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-			repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-				authentication(userName: project.hasProperty('ossrhUsername')?ossrhUsername:'', password: project.hasProperty('ossrhPassword')?ossrhPassword:'')
+			repository(url: "${mavenStagingRepositoryUrl}") {
+				authentication(userName: mavenUsername, password: mavenPassword)
 			}
 
-			snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-				authentication(userName: project.hasProperty('ossrhUsername')?ossrhUsername:'', password: project.hasProperty('ossrhPassword')?ossrhPassword:'')
+			snapshotRepository(url: "${mavenSnapshotsRepositoryUrl}") {
+				authentication(userName: mavenUsername, password: mavenPassword)
 			}
 
 			pom.project {
