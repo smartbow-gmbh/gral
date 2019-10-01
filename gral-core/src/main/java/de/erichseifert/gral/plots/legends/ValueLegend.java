@@ -220,10 +220,14 @@ public abstract class ValueLegend extends AbstractLegend
 			for (Row row : getEntries(source)) {
 				String label = getLabel(row);
 				Font font = getFont();
-				Item item = new Item(getSymbol(row), label, font);
+				Item item = getItem(getSymbol(row), label, font);
 				add(item);
 				components.put(row, item);
 			}
 		}
+	}
+
+	protected Item getItem(Drawable symbol, String label, Font font) {
+		return new Item(symbol, label, font, this.getLabelColor());
 	}
 }

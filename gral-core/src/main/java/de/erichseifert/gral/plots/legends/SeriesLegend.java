@@ -21,11 +21,12 @@
  */
 package de.erichseifert.gral.plots.legends;
 
-import java.awt.Font;
+import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
 import de.erichseifert.gral.data.DataSource;
+import de.erichseifert.gral.data.Row;
 import de.erichseifert.gral.graphics.Drawable;
 
 /**
@@ -47,7 +48,7 @@ public abstract class SeriesLegend extends AbstractLegend {
 		super.add(source);
 		String label = getLabel(source);
 		Font font = getFont();
-		Item item = new Item(getSymbol(source), label, font);
+		Item item = getItem(getSymbol(source), label, font);
 		add(item);
 		drawableByDataSource.put(source, item);
 	}
@@ -59,6 +60,10 @@ public abstract class SeriesLegend extends AbstractLegend {
 		if (drawable != null) {
 			remove(drawable);
 		}
+	}
+
+	protected Item getItem(Drawable symbol, String label, Font font) {
+		return new Item(symbol, label, font, this.getLabelColor());
 	}
 
 	/**

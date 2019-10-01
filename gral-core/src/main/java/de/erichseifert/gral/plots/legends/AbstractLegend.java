@@ -92,6 +92,8 @@ public abstract class AbstractLegend extends DrawableContainer
 	private Dimension2D gap;
 	/** Symbol size relative to the font height. */
 	private Dimension2D symbolSize;
+	/** the foreground color of the legend */
+	private Paint labelColor;
 
 	/**
 	 * An abstract base class for drawable symbols.
@@ -145,7 +147,7 @@ public abstract class AbstractLegend extends DrawableContainer
 		 * @param labelText Description text.
 		 * @param font Font for the description text.
 		 */
-		public Item(Drawable symbol, String labelText, Font font) {
+		public Item(Drawable symbol, String labelText, Font font, Paint paint) {
 			double fontSize = font.getSize2D();
 			setLayout(new EdgeLayout(fontSize, 0.0));
 
@@ -156,6 +158,7 @@ public abstract class AbstractLegend extends DrawableContainer
 			label.setFont(font);
 			label.setAlignmentX(0.0);
 			label.setAlignmentY(0.5);
+			label.setColor(paint);
 			add(label, Location.CENTER);
 		}
 
@@ -189,6 +192,7 @@ public abstract class AbstractLegend extends DrawableContainer
 		// TODO: Replace setter call in constructor
 		setGap(new de.erichseifert.gral.graphics.Dimension2D.Double(2.0, 0.5));
 		symbolSize = new de.erichseifert.gral.graphics.Dimension2D.Double(2.0, 2.0);
+		labelColor = Color.WHITE;
 		setLayout(new StackedLayout(orientation, gap.getWidth(), gap.getHeight()));
 		refreshLayout();
 	}
@@ -443,5 +447,15 @@ public abstract class AbstractLegend extends DrawableContainer
 	@Override
 	public void setSymbolSize(Dimension2D symbolSize) {
 		this.symbolSize = symbolSize;
+	}
+
+	@Override
+	public Paint getLabelColor() {
+		return labelColor;
+	}
+
+	@Override
+	public void setLabelColor(Paint labelColor) {
+		this.labelColor = labelColor;
 	}
 }

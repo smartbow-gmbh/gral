@@ -186,4 +186,16 @@ public interface Legend extends Container, Drawable {
 	 * @param gap Gap size relative to the font height.
 	 */
 	void setGap(Dimension2D gap);
+
+	/** Get the {@link java.awt.Paint} instance to be used to fill
+	 * the foreground color of the legend.
+	 * @return the paint to be used as the foreground
+	 */
+	Paint getLabelColor();
+
+	/** Set the {@link java.awt.Paint} instance to be used to fill
+	 * the foreground color of the legend.
+	 * @param paint the paint to be used as the foreground
+	 */
+	void setLabelColor(Paint paint);
 }
