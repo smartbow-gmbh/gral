@@ -364,6 +364,29 @@ public class BarPlot extends XYPlot {
 		setSettingDefault(PAINT_ALL_BARS, false);
 
 		setLegend(new BarPlotLegend(this));
+
+		double max = getAxisMax(AXIS_Y);
+		double tick = 2;
+		/*
+		 * calculate new tick-spacing calculates ticks as follows: max < 10 = 2; max
+		 * > 10 = 5; max > 50 = 10; max > 100 = 20; max > 200 = 50; max > 500 = 100;
+		 * ...
+		 */
+		while (true) {
+			if (max >= tick * 10) {
+				tick *= 2;
+				// not very good, but less code than other solutions to come from 4*
+				// to 5*
+				String num = String.valueOf(tick);
+				if (num.startsWith("4")) {
+					num = num.replaceFirst("4", "5");
+					tick = Double.valueOf(num);
+				}
+			} else {
+				break;
+			}
+		}
+		getAxisRenderer(AXIS_Y).setSetting(AxisRenderer.TICKS_SPACING, tick);
 	}
 
 	@Override

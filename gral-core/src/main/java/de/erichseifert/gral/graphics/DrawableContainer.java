@@ -23,6 +23,7 @@ package de.erichseifert.gral.graphics;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -208,7 +209,7 @@ public class DrawableContainer extends AbstractDrawable implements Container {
      * @return an Iterator.
      */
 	public Iterator<Drawable> iterator() {
-		return components.iterator();
+		return new ArrayList<Drawable>(components).iterator();
 	}
 
 	/**

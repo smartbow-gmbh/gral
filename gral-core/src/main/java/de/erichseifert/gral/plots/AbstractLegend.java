@@ -132,7 +132,7 @@ public abstract class AbstractLegend extends StylableContainer
 			symbol = symbolRenderer.getSymbol(row);
 			add(symbol, Location.WEST);
 
-			label = new Label(labelText);
+			label = getLabel(labelText);
 			label.setSetting(Label.FONT, font);
 			label.setSetting(Label.ALIGNMENT_X, 0.0);
 			label.setSetting(Label.ALIGNMENT_Y, 0.5);
@@ -145,6 +145,10 @@ public abstract class AbstractLegend extends StylableContainer
 		 */
 		public Row getRow() {
 			return row;
+		}
+
+		public Label getLabel(String text) {
+			return new Label(text);
 		}
 	}
 
@@ -168,6 +172,7 @@ public abstract class AbstractLegend extends StylableContainer
 		setSettingDefault(ALIGNMENT_Y, 0.0);
 		setSettingDefault(GAP, new de.erichseifert.gral.util.Dimension2D.Double(2.0, 0.5));
 		setSettingDefault(SYMBOL_SIZE, new de.erichseifert.gral.util.Dimension2D.Double(2.0, 2.0));
+		setSettingDefault(LABEL_COLOR, Color.WHITE);
 	}
 
 	/**
@@ -233,11 +238,15 @@ public abstract class AbstractLegend extends StylableContainer
 		for (Row row : getEntries(source)) {
 			String label = getLabel(row);
 			Font font = this.<Font>getSetting(FONT);
-			Item item = new Item(row, this, label, font);
+			Item item = getItem(row, this, label, font, this.<Paint>getSetting(LABEL_COLOR));
 			add(item);
 			components.put(row, item);
 		}
 		invalidate();
+	}
+
+	public Item getItem(Row row, LegendSymbolRenderer symbolRenderer, String labelText, Font font, Paint paint) {
+		return new Item(row, this, labelText, font, this.<Paint>getSetting(LABEL_COLOR));
 	}
 
 	/**

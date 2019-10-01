@@ -328,6 +328,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 
 				List<Axis> axes = Arrays.asList(axis);
 				List<AxisRenderer> axisRenderers = Arrays.asList(axisRenderer);
+                plot.unregisterDrawables();
 				for (int rowIndex = 0; rowIndex < s.getRowCount(); rowIndex++) {
 					Row row = s.getRow(rowIndex);
 					PointData pointData = new PointData(
@@ -336,6 +337,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 					Drawable point = pointRenderer.getPoint(pointData, shape);
 					point.setBounds(bounds);
 					point.draw(context);
+                    plot.registerShape(shape, x, y, row);
 				}
 			}
 
@@ -345,6 +347,11 @@ public class PiePlot extends AbstractPlot implements Navigable {
 				// Reset clipping
 				graphics.setClip(clipBoundsOld);
 			}
+		}
+
+		@Override
+		public Plot getPlot() {
+			return plot;
 		}
 	}
 
@@ -588,6 +595,9 @@ public class PiePlot extends AbstractPlot implements Navigable {
 		 */
 		protected void drawValueLabel(DrawingContext context, Slice slice,
 				double radius, Row row, int col) {
+			if (sum == 0.0) {
+				return;
+			}
 			Comparable<?> value = row.get(col);
 
 			// Formatting
@@ -598,6 +608,11 @@ public class PiePlot extends AbstractPlot implements Navigable {
 
 			// Text to display
 			String text = (format != null) ? format.format(value) : value.toString();
+
+			Boolean absoluteIntegerNumber = getSetting(VALUE_DISPLAY_ABSOLUTE_NUMBER);
+			if (absoluteIntegerNumber != null && absoluteIntegerNumber) {
+				text = text + " (" + row.get(0) + ")";
+			}
 
 			// Visual settings
 			ColorMapper colors = getSetting(VALUE_COLOR);
@@ -797,7 +812,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 		slices = new HashMap<DataSource, List<Slice>>();
 
 		setPlotArea(new PiePlotArea2D(this));
-		setLegend(new PiePlotLegend(this));
+		setLegend(generateLegend(this));
 
 		add(data);
 
@@ -805,6 +820,10 @@ public class PiePlot extends AbstractPlot implements Navigable {
 		createDefaultAxisRenderers();
 
 		dataUpdated(data);
+	}
+
+	public PiePlotLegend generateLegend(PiePlot plot) {
+		return new PiePlotLegend(plot);
 	}
 
 	@Override

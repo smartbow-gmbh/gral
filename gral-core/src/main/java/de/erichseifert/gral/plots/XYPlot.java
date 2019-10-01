@@ -448,6 +448,7 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 					Drawable drawable = lineRenderer.getLine(points, line);
 					drawable.draw(context);
 				}
+                plot.unregisterDrawables();
 				if (pointRenderer != null) {
 					for (DataPoint point : points) {
 						PointND<Double> pos = point.position;
@@ -457,6 +458,7 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 						Drawable drawable = point.drawable;
 						drawable.draw(context);
 						graphics.setTransform(txOffset);
+						plot.registerShape(point.shape, pointX + getX(), pointY + getY(), point.data.row);
 					}
 				}
 			}
@@ -468,6 +470,11 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 				// Reset clipping
 				graphics.setClip(clipBoundsOld);
 			}
+		}
+
+		@Override
+		public Plot getPlot() {
+			return plot;
 		}
 	}
 

@@ -107,6 +107,8 @@ public abstract class PlotArea extends StylableDrawable {
 	 */
 	protected abstract void drawPlot(DrawingContext context);
 
+    public abstract Plot getPlot();
+
 	/**
 	 * Invoked if a setting has changed.
 	 * @param event Event containing information about the changed setting.

@@ -25,12 +25,15 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Paint;
+import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +48,7 @@ import de.erichseifert.gral.data.Column;
 import de.erichseifert.gral.data.DataChangeEvent;
 import de.erichseifert.gral.data.DataListener;
 import de.erichseifert.gral.data.DataSource;
+import de.erichseifert.gral.data.Row;
 import de.erichseifert.gral.data.statistics.Statistics;
 import de.erichseifert.gral.graphics.Container;
 import de.erichseifert.gral.graphics.Drawable;
@@ -98,6 +102,8 @@ public abstract class AbstractPlot extends StylableContainer
 	/** AbstractPlot legend. */
 	private Legend legend;
 
+    private Collection<RowShape> shapes;
+
 	/**
 	 * Initializes a new {@code AbstractPlot} instance with the specified data series.
 	 * The series will be visible by default.
@@ -105,7 +111,7 @@ public abstract class AbstractPlot extends StylableContainer
 	 */
 	public AbstractPlot(DataSource... series) {
 		super(new EdgeLayout(20.0, 20.0));
-
+		shapes = new ArrayList<RowShape>();
 		title = new Label(); //$NON-NLS-1$
 		title.setSetting(Label.FONT, Font.decode(null).deriveFont(18f));
 
@@ -167,6 +173,42 @@ public abstract class AbstractPlot extends StylableContainer
 		}
 
 		drawComponents(context);
+	}
+
+	private static class RowShape {
+		private Shape shape;
+		private double x, y;
+		private Row row;
+
+		public RowShape(Shape shape, double x, double y, Row row) {
+			this.shape = shape;
+			this.x = x;
+			this.y = y;
+			this.row = row;
+		}
+
+	}
+
+	public void registerShape(Shape shape, double x, double y, Row row) {
+		shapes.add(new RowShape(shape, x, y, row));
+	}
+
+	public void unregisterDrawables() {
+		shapes.clear();
+	}
+
+	public Row getRowAt(Point point) {
+		for (RowShape rowShape : shapes) {
+			int mouseX = point.x;
+			int mouseY = point.y;
+			mouseX = (int) (mouseX - rowShape.x);
+			mouseY = (int) (mouseY - rowShape.y);
+			Point p = new Point(mouseX, mouseY);
+			if (rowShape.shape.contains(p)) {
+				return rowShape.row;
+			}
+		}
+		return null;
 	}
 
 	/**

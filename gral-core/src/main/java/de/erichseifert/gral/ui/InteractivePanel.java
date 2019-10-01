@@ -21,6 +21,7 @@
  */
 package de.erichseifert.gral.ui;
 
+import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -41,6 +42,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -50,14 +52,17 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 
+import de.erichseifert.gral.data.Row;
 import de.erichseifert.gral.graphics.Container;
 import de.erichseifert.gral.graphics.Drawable;
+import de.erichseifert.gral.graphics.DrawableContainer;
 import de.erichseifert.gral.graphics.DrawingContext;
 import de.erichseifert.gral.io.IOCapabilities;
 import de.erichseifert.gral.io.plots.DrawableWriter;
 import de.erichseifert.gral.io.plots.DrawableWriterFactory;
 import de.erichseifert.gral.navigation.Navigable;
 import de.erichseifert.gral.navigation.Navigator;
+import de.erichseifert.gral.plots.PlotArea;
 import de.erichseifert.gral.util.Messages;
 import de.erichseifert.gral.util.PointND;
 
@@ -104,6 +109,14 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	/** Object to be used as listener for panning actions. */
 	private NavigationMoveListener panListener;
 
+    private ArrayList<Listener> listeners;
+
+    public interface Listener {
+        void onRowClick(Row row);
+
+        void onMouseOver(Row row);
+    }
+
 	/**
 	 * Listener class for zooming actions.
 	 */
@@ -142,7 +155,7 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	@SuppressWarnings("serial")
 	public InteractivePanel(Drawable drawable) {
 		super(drawable);
-
+        listeners = new ArrayList<Listener>();
 		printerJob = PrinterJob.getPrinterJob();
 		printerJob.setPrintable(this);
 
@@ -233,10 +246,33 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 
 		popupMenuEnabled = true;
 		addMouseListener(new PopupListener());
+		NavigationListener navigationListener = new NavigationListener();
+		addMouseListener(navigationListener);
+		addMouseMotionListener(navigationListener);
 
 		setZoomable(true);
 		setPannable(true);
 	}
+
+    public void addListener(Listener listener) {
+    	listeners.add(listener);
+    }
+
+    public void removeListener(Listener listener) {
+    	listeners.remove(listener);
+    }
+
+    protected void fireRowClicked(Row row) {
+    	for (Listener listener : listeners) {
+    		listener.onRowClick(row);
+    	}
+    }
+
+    protected void fireMouseOver(Row row) {
+    	for (Listener listener : listeners) {
+    		listener.onMouseOver(row);
+    	}
+    }
 
 	/**
 	 * Method that returns the popup menu for a given mouse event. It will be
@@ -388,6 +424,53 @@ public class InteractivePanel extends DrawablePanel implements Printable {
         	popupMenuPos = e.getPoint();
     		menu.show(e.getComponent(), e.getX(), e.getY());
 	    }
+	}
+
+	private class NavigationListener extends MouseAdapter {
+
+		private Row getRow(Point point) {
+			Drawable drawable = getDrawable();
+			if (drawable instanceof DrawableContainer) {
+				DrawableContainer c = (DrawableContainer) drawable;
+				Drawable drawableAt = c.getDrawableAt(point);
+				if (drawableAt instanceof PlotArea) {
+					PlotArea plotArea = (PlotArea) drawableAt;
+					Row row = plotArea.getPlot().getRowAt(point);
+					if (row != null) {
+						return row;
+					}
+				}
+			}
+			return null;
+		}
+
+		@Override
+		public void mouseClicked(MouseEvent e) {
+			Row row = getRow(e.getPoint());
+			if (row != null) {
+				fireRowClicked(row);
+			}
+		}
+
+		private Row prevRow = null;
+
+		@Override
+		public void mouseMoved(MouseEvent e) {
+			if (listeners.isEmpty()) {
+				return;
+			}
+			Row curRow = getRow(e.getPoint());
+			if (curRow != prevRow) {
+				prevRow = curRow;
+				fireMouseOver(curRow);
+				if (curRow == null) {
+					setCursor(Cursor.getDefaultCursor());
+				} else {
+					setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+				}
+			}
+		}
+
 	}
 
 	/**

@@ -93,7 +93,11 @@ public abstract class DataAccessor
 			return false;
 		}
 		for (int i = 0; i < size; i++) {
-			if (!r.get(i).equals(get(i))) {
+			Comparable<?> otherVal = r.get(i);
+			Comparable<?> thisVal = get(i);
+			if (otherVal != null && !otherVal.equals(thisVal)) {
+				return false;
+			} else if (otherVal == null && thisVal != null) {
 				return false;
 			}
 		}

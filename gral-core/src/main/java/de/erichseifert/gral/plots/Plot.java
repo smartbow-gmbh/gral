@@ -237,4 +237,11 @@ public interface Plot extends Drawable, Container, SettingsStorage {
 	 *        {@code false} otherwise.
 	 */
 	void setVisible(DataSource source, boolean visible);
+
+    void unregisterDrawables();
+
+    Row getRowAt(Point point);
+
+    void registerShape(Shape shape, double x, double y, Row row);
+
 }
