@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -78,7 +78,7 @@ public class DrawableWriterFilter extends FileFilter {
 		return capabilities;
 	}
 
-	private final static String getExtension(File f) {
+	private static String getExtension(File f) {
 		String name = f.getName();
 		int lastDot = name.lastIndexOf('.');
 		if ((lastDot <= 0) || (lastDot == name.length() - 1)) {

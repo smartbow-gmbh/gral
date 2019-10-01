@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,118 +21,78 @@
  */
 package de.erichseifert.gral.data.statistics;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
-import org.junit.Before;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import org.junit.Test;
 
-import de.erichseifert.gral.data.DataTable;
-import de.erichseifert.gral.util.Orientation;
-
 public class HistogramTest {
-	private DataTable table;
 
-	@Before
-	@SuppressWarnings("unchecked")
-	public void setUp() {
-		table = new DataTable(Integer.class, Integer.class);
-		table.add(1, 1); // 0
-		table.add(1, 3); // 1
-		table.add(2, 2); // 2
-		table.add(2, 2); // 3
-		table.add(5, 4); // 4
-		table.add(1, 2); // 5
-		table.add(2, 9); // 6
-		table.add(4, 1); // 7
+	@Test
+	public void testHasDesiredNumberOfBins() {
+		int binCount = 4;
+
+		Histogram histogram = new Histogram(Collections.<Comparable<?>>emptyList(), binCount);
+
+		assertThat(histogram.size(), is(4));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testThrowsExceptionWhenBinCountLessThanOne() {
+		int binCount = 0;
+
+		Histogram histogram = new Histogram(Collections.<Comparable<?>>emptyList(), binCount);
 	}
 
 	@Test
-	public void testCreate() {
-		Histogram histogram = new Histogram1D(table, Orientation.VERTICAL, 4);
-
-		assertEquals(table.getColumnCount(), histogram.getColumnCount());
-		assertEquals(4, histogram.getRowCount());
+	public void testBucketsContainValueCounts() {
+		Iterable<Comparable<?>> data = createHistogramData();
+		Histogram histogram = new Histogram(data, 4);
+		assertThat(histogram, hasItems(3, 3, 0, 1));
 	}
 
 	@Test
-	public void testEqualBreaks() {
-		Histogram histogram = new Histogram1D(table, Orientation.VERTICAL, 4);
-
-		long[] expected = {
-			3L, 5L,  // 1.0-2.0, 1.0-3.0
-			3L, 2L,  // 2.0-3.0, 3.0-5.0
-			0L, 0L,  // 3.0-4.0, 5.0-7.0
-			1L, 0L   // 4.0-5.0, 7.0-9.0
-		};
-		int i = 0;
-		while (i < expected.length) {
-			int col = i%2, row = i/2;
-			assertEquals("column " + (col+1)+", row " + (row+1)+":", expected[i], histogram.get(col, row));
-			i++;
-		}
+	public void testCustomBinsContainValueCounts() {
+		Iterable<Comparable<?>> data = createHistogramData();
+		Histogram histogram = new Histogram(data, -1.0, 0.5, 2.0, 2.8, 5.0);
+		assertThat(histogram, hasItems(0, 3, 3, 1));
 	}
 
 	@Test
-	public void testCustomBreaks() {
-		Histogram histogram = new Histogram1D(table, Orientation.VERTICAL,
-				new Number[][] {{1.0, 2.0, 3.0, 4.0, 5.0}, {1.0, 3.0, 5.0, 7.0, 9.0}});
+	public void testGetReturnsBinSize() {
+		Iterable<Comparable<?>> data = createHistogramData();
+		Histogram histogram = new Histogram(data, 4);
 
-		long[] expected = {
-			3L, 5L,  // 1.0-2.0, 1.0-3.0
-			3L, 2L,  // 2.0-3.0, 3.0-5.0
-			0L, 0L,  // 3.0-4.0, 5.0-7.0
-			1L, 0L   // 4.0-5.0, 7.0-9.0
-		};
-		int i = 0;
-		while (i < expected.length) {
-			int col = i%2, row = i/2;
-			assertEquals("column " + (col+1)+", row " + (row+1)+":", expected[i], histogram.get(col, row));
-			i++;
-		}
+		int binSize = histogram.get(1);
+
+		assertThat(binSize, is(3));
 	}
 
-	@Test
-	public void testGet() {
-		Histogram histogram = new Histogram1D(table, Orientation.VERTICAL, 4);
+	@Test(expected = IllegalArgumentException.class)
+	public void testThrowsExceptionWhenBreakCountLessThanTwo() {
+		Iterable<Comparable<?>> data = createHistogramData();
+		int lessThanTwo = 1;
+		Number[] breaks = new Number[lessThanTwo];
+		Arrays.fill(breaks, 2);
 
-		assertEquals(3L, histogram.get(0, 0));
-		assertEquals(5L, histogram.get(1, 0));
-		assertEquals(3L, histogram.get(0, 1));
-		assertEquals(2L, histogram.get(1, 1));
-		assertEquals(0L, histogram.get(0, 2));
-		assertEquals(0L, histogram.get(1, 2));
-		assertEquals(1L, histogram.get(0, 3));
-		assertEquals(0L, histogram.get(1, 3));
+		new Histogram(data, breaks);
 	}
 
-	@Test
-	public void testCellLimits() {
-		Histogram1D histogram = new Histogram1D(table, Orientation.VERTICAL, 4);
-		Number[][] expected = new Number[][] {{1.0, 2.0, 3.0, 4.0, 5.0}, {1.0, 3.0, 5.0, 7.0, 9.0}};
-
-		for (int colIndex = 0; colIndex < histogram.getColumnCount(); colIndex++) {
-			Number[] col = expected[colIndex];
-			for (int rowIndex = 0; rowIndex < col.length-1; rowIndex++) {
-				Number[] cellLimits = histogram.getCellLimits(colIndex, rowIndex);
-				assertEquals(col[rowIndex], cellLimits[0]);
-				assertEquals(col[rowIndex + 1], cellLimits[1]);
-			}
-		}
-	}
-
-	@Test
-	public void testDataAdd() {
-		Histogram histogram = new Histogram1D(table, Orientation.VERTICAL, 4);
-		assertEquals(3L, histogram.get(0, 0));
-		table.add(1, 1);
-		assertEquals(4L, histogram.get(0, 0));
-	}
-
-	@Test
-	public void testDataRemove() {
-		Histogram histogram = new Histogram1D(table, Orientation.VERTICAL, 4);
-		assertEquals(3L, histogram.get(0, 0));
-		table.remove(0);
-		assertEquals(2L, histogram.get(0, 0));
+	private static Iterable<Comparable<?>> createHistogramData() {
+		List<Comparable<?>> data = new LinkedList<>();
+		data.add(1);
+		data.add(1);
+		data.add(2);
+		data.add(2);
+		data.add(5);
+		data.add(1);
+		data.add(2);
+		data.add(4);
+		return data;
 	}
 }

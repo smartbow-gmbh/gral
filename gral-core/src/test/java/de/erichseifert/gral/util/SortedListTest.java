@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -26,21 +26,22 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.List;
 
+import de.erichseifert.gral.TestUtils;
 import org.junit.Test;
 
 public class SortedListTest {
-	public static final double DELTA = 1e-15;
+	public static final double DELTA = TestUtils.DELTA;
 
 	@Test
 	public void testCreation() {
-		SortedList<Double> standard = new SortedList<Double>();
+		SortedList<Double> standard = new SortedList<>();
 		assertEquals(0, standard.size());
 
-		SortedList<Double> capacity = new SortedList<Double>(20);
+		SortedList<Double> capacity = new SortedList<>(20);
 		assertEquals(0, capacity.size());
 
 		List<Double> data = Arrays.asList(0.0, 2.0, 1.0);
-		SortedList<Double> collection = new SortedList<Double>(data);
+		SortedList<Double> collection = new SortedList<>(data);
 		assertEquals(3, collection.size());
 		assertEquals(0.0, collection.get(0), DELTA);
 		assertEquals(1.0, collection.get(1), DELTA);
@@ -49,7 +50,7 @@ public class SortedListTest {
 
 	@Test
 	public void testSize() {
-		SortedList<Double> l = new SortedList<Double>();
+		SortedList<Double> l = new SortedList<>();
 		assertEquals(0, l.size());
 		l.add(0.0);
 		assertEquals(1, l.size());
@@ -61,7 +62,7 @@ public class SortedListTest {
 
 	@Test
 	public void testAdd() {
-		SortedList<Double> l = new SortedList<Double>();
+		SortedList<Double> l = new SortedList<>();
 		l.add(2.0);
 		l.add(1.0);
 		l.add(2.0);
@@ -73,7 +74,7 @@ public class SortedListTest {
 
 	@Test
 	public void testGet() {
-		SortedList<Double> l = new SortedList<Double>();
+		SortedList<Double> l = new SortedList<>();
 		l.add(2.0);
 		l.add(1.0);
 		l.add(2.0);
@@ -86,7 +87,7 @@ public class SortedListTest {
 
 	@Test
 	public void testIndexOf() {
-		SortedList<Double> l = new SortedList<Double>();
+		SortedList<Double> l = new SortedList<>();
 		l.add(0.0);
 		l.add(0.0);
 		l.add(1.0);
@@ -99,7 +100,7 @@ public class SortedListTest {
 
 	@Test
 	public void testRemove() {
-		SortedList<Double> l = new SortedList<Double>();
+		SortedList<Double> l = new SortedList<>();
 		l.add(0.0);
 		l.add(0.0);
 		l.add(1.0);

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -111,10 +111,10 @@ public class LogarithmicRenderer2D extends AbstractAxisRenderer2D {
 			// TODO Automatic scaling for logarithmic axes
 			tickSpacing = 1.0;
 		} else {
-			tickSpacing = this.<Number>getSetting(TICKS_SPACING).doubleValue();
+			tickSpacing = getTickSpacing().doubleValue();
 		}
 
-		int ticksMinorCount = this.<Integer>getSetting(TICKS_MINOR_COUNT);
+		int ticksMinorCount = getMinorTicksCount();
 		double tickSpacingMinor = (ticksMinorCount > 0)
 			? tickSpacing/(ticksMinorCount + 1) : tickSpacing;
 

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -22,6 +22,7 @@
 package de.erichseifert.gral.io.plots;
 
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -96,7 +97,7 @@ public class BitmapWriter extends IOCapabilitiesStorage
 	/** Data format as MIME type string. */
 	private final String mimeType;
 	/** Bitmap raster format. */
-	private int rasterFormat;
+	private final int rasterFormat;
 
 	/**
 	 * Creates a new {@code BitmapWriter} object with the specified
@@ -159,13 +160,18 @@ public class BitmapWriter extends IOCapabilitiesStorage
 			throws IOException {
 		BufferedImage image = new BufferedImage(
 				(int)Math.ceil(width), (int)Math.ceil(height), rasterFormat);
+		Graphics2D imageGraphics = image.createGraphics();
+		imageGraphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		imageGraphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		imageGraphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		imageGraphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 
 		DrawingContext context =
-			new DrawingContext((Graphics2D) image.getGraphics());
+			new DrawingContext(imageGraphics);
 
 		Iterator<ImageWriter> writers =
 			ImageIO.getImageWritersByMIMEType(getMimeType());
-		while (writers.hasNext()) {
+		if (writers.hasNext()) {
 			ImageWriter writer = writers.next();
 			ImageOutputStream ios =
 				ImageIO.createImageOutputStream(destination);
@@ -179,7 +185,6 @@ public class BitmapWriter extends IOCapabilitiesStorage
 				d.setBounds(boundsOld);
 				ios.close();
 			}
-			return;
 		}
 	}
 

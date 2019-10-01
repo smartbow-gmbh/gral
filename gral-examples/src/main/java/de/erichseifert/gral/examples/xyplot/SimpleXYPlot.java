@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -33,19 +33,18 @@ import java.util.Random;
 import de.erichseifert.gral.data.DataSeries;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.examples.ExamplePanel;
-import de.erichseifert.gral.plots.PlotArea;
+import de.erichseifert.gral.graphics.Label;
 import de.erichseifert.gral.plots.XYPlot;
 import de.erichseifert.gral.plots.axes.AxisRenderer;
 import de.erichseifert.gral.plots.axes.LogarithmicRenderer2D;
 import de.erichseifert.gral.plots.lines.DiscreteLineRenderer2D;
-import de.erichseifert.gral.plots.lines.LineRenderer;
 import de.erichseifert.gral.plots.points.DefaultPointRenderer2D;
 import de.erichseifert.gral.plots.points.PointRenderer;
 import de.erichseifert.gral.plots.points.SizeablePointRenderer;
 import de.erichseifert.gral.ui.InteractivePanel;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Insets2D;
-import de.erichseifert.gral.util.Orientation;
+import de.erichseifert.gral.graphics.Insets2D;
+import de.erichseifert.gral.graphics.Orientation;
 
 
 public class SimpleXYPlot extends ExamplePanel {
@@ -75,62 +74,62 @@ public class SimpleXYPlot extends ExamplePanel {
 
 		// Format plot
 		plot.setInsets(new Insets2D.Double(20.0, 40.0, 40.0, 40.0));
-		plot.setSetting(XYPlot.BACKGROUND, Color.WHITE);
-		plot.setSetting(XYPlot.TITLE, getDescription());
+		plot.setBackground(Color.WHITE);
+		plot.getTitle().setText(getDescription());
 
 		// Format plot area
-		plot.getPlotArea().setSetting(PlotArea.BACKGROUND, new RadialGradientPaint(
+		plot.getPlotArea().setBackground(new RadialGradientPaint(
 			new Point2D.Double(0.5, 0.5),
 			0.75f,
 			new float[] { 0.6f, 0.8f, 1.0f },
 			new Color[] { new Color(0, 0, 0, 0), new Color(0, 0, 0, 32), new Color(0, 0, 0, 128) }
 		));
-		plot.getPlotArea().setSetting(PlotArea.BORDER, null);
+		plot.getPlotArea().setBorderStroke(null);
 
 		// Format axes
 		AxisRenderer axisRendererX = new LogarithmicRenderer2D();
 		AxisRenderer axisRendererY = plot.getAxisRenderer(XYPlot.AXIS_Y);
-		axisRendererX.setSetting(AxisRenderer.LABEL, "Logarithmic axis");
+		axisRendererX.setLabel(new Label("Logarithmic axis"));
 		plot.setAxisRenderer(XYPlot.AXIS_X, axisRendererX);
 		// Custom tick labels
-		Map<Double, String> labels = new HashMap<Double, String>();
+		Map<Double, String> labels = new HashMap<>();
 		labels.put(2.0, "Two");
 		labels.put(1.5, "OnePointFive");
-		axisRendererX.setSetting(AxisRenderer.TICKS_CUSTOM, labels);
+		axisRendererX.setCustomTicks(labels);
 		// Custom stroke for the x-axis
 		BasicStroke stroke = new BasicStroke(2f);
-		axisRendererX.setSetting(AxisRenderer.SHAPE_STROKE, stroke);
-		axisRendererY.setSetting(AxisRenderer.LABEL, "Linear axis");
+		axisRendererX.setShapeStroke(stroke);
+		Label linearAxisLabel = new Label("Linear axis");
+		linearAxisLabel.setRotation(90);
+		axisRendererY.setLabel(linearAxisLabel);
 		// Change intersection point of Y axis
-		axisRendererY.setSetting(AxisRenderer.INTERSECTION, 1.0);
+		axisRendererY.setIntersection(1.0);
 		// Change tick spacing
-		axisRendererX.setSetting(AxisRenderer.TICKS_SPACING, 2.0);
+		axisRendererX.setTickSpacing(2.0);
 
 		// Format rendering of data points
 		PointRenderer sizeablePointRenderer = new SizeablePointRenderer();
-		sizeablePointRenderer.setSetting(PointRenderer.COLOR, GraphicsUtils.deriveDarker(COLOR1));
-		plot.setPointRenderer(seriesLin, sizeablePointRenderer);
+		sizeablePointRenderer.setColor(GraphicsUtils.deriveDarker(COLOR1));
+		plot.setPointRenderers(seriesLin, sizeablePointRenderer);
 		PointRenderer defaultPointRenderer = new DefaultPointRenderer2D();
-		defaultPointRenderer.setSetting(PointRenderer.COLOR, GraphicsUtils.deriveDarker(COLOR2));
-		defaultPointRenderer.setSetting(PointRenderer.ERROR_DISPLAYED, true);
-		defaultPointRenderer.setSetting(PointRenderer.ERROR_COLOR, COLOR2);
-		plot.setPointRenderer(seriesLog, defaultPointRenderer);
+		defaultPointRenderer.setColor(GraphicsUtils.deriveDarker(COLOR2));
+		defaultPointRenderer.setErrorVisible(true);
+		defaultPointRenderer.setErrorColor(COLOR2);
+		plot.setPointRenderers(seriesLog, defaultPointRenderer);
 
 		// Format data lines
-		LineRenderer discreteRenderer = new DiscreteLineRenderer2D();
-		discreteRenderer.setSetting(LineRenderer.COLOR, COLOR1);
-		discreteRenderer.setSetting(LineRenderer.STROKE, new BasicStroke(
-			3.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
-			10.0f, new float[] {3f, 6f}, 0.0f));
-		plot.setLineRenderer(seriesLin, discreteRenderer);
+		DiscreteLineRenderer2D discreteRenderer = new DiscreteLineRenderer2D();
+		discreteRenderer.setColor(COLOR1);
+		discreteRenderer.setStroke(new BasicStroke(
+				3.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+				10.0f, new float[] {3f, 6f}, 0.0f));
+		plot.setLineRenderers(seriesLin, discreteRenderer);
 		// Custom gaps for points
-		discreteRenderer.setSetting(LineRenderer.GAP, 2.0);
-		discreteRenderer.setSetting(LineRenderer.GAP_ROUNDED, true);
+		discreteRenderer.setGap(2.0);
+		discreteRenderer.setGapRounded(true);
 		// Custom ascending
-		discreteRenderer.setSetting(DiscreteLineRenderer2D.ASCENT_DIRECTION,
-			Orientation.VERTICAL);
-		discreteRenderer.setSetting(DiscreteLineRenderer2D.ASCENDING_POINT,
-			0.5);
+		discreteRenderer.setAscentDirection(Orientation.VERTICAL);
+		discreteRenderer.setAscendingPoint(0.5);
 
 		// Add plot to Swing component
 		add(new InteractivePanel(plot), BorderLayout.CENTER);

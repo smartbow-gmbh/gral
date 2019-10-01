@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -108,8 +108,8 @@ public class LinearRenderer2D extends AbstractAxisRenderer2D {
 				ticksMinorCount = 4;
 			}
 		} else {
-			tickSpacing = this.<Number>getSetting(TICKS_SPACING).doubleValue();
-			ticksMinorCount = this.<Integer>getSetting(TICKS_MINOR_COUNT);
+			tickSpacing = getTickSpacing().doubleValue();
+			ticksMinorCount = getMinorTicksCount();
 		}
 
 		double tickSpacingMinor = tickSpacing;

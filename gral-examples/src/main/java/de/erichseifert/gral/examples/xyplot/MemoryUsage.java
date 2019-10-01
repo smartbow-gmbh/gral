@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -42,9 +42,11 @@ import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.data.statistics.Statistics;
 import de.erichseifert.gral.examples.ExamplePanel;
-import de.erichseifert.gral.plots.Legend;
+import de.erichseifert.gral.graphics.Insets2D;
+import de.erichseifert.gral.graphics.Orientation;
 import de.erichseifert.gral.plots.Plot;
 import de.erichseifert.gral.plots.XYPlot;
+import de.erichseifert.gral.plots.XYPlot.XYPlotArea2D;
 import de.erichseifert.gral.plots.areas.AreaRenderer;
 import de.erichseifert.gral.plots.areas.DefaultAreaRenderer2D;
 import de.erichseifert.gral.plots.axes.AxisRenderer;
@@ -52,8 +54,6 @@ import de.erichseifert.gral.plots.lines.DefaultLineRenderer2D;
 import de.erichseifert.gral.plots.lines.LineRenderer;
 import de.erichseifert.gral.ui.InteractivePanel;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Insets2D;
-import de.erichseifert.gral.util.Orientation;
 
 final class UpdateTask implements ActionListener {
 	private final DataTable data;
@@ -78,8 +78,7 @@ final class UpdateTask implements ActionListener {
 			getFreePhysicalMemorySize = osBean.getClass()
 				.getMethod("getFreePhysicalMemorySize");
 			getFreePhysicalMemorySize.setAccessible(true);
-		} catch (SecurityException ex) {
-		} catch (NoSuchMethodException ex) {
+		} catch (SecurityException | NoSuchMethodException ex) {
 		}
 	}
 
@@ -104,9 +103,7 @@ final class UpdateTask implements ActionListener {
 				memSysTotal = (Long) getTotalPhysicalMemorySize.invoke(osBean);
 				memSysFree = (Long) getFreePhysicalMemorySize.invoke(osBean);
 				memSysUsed = memSysTotal - memSysFree;
-			} catch (IllegalArgumentException ex) {
-			} catch (IllegalAccessException ex) {
-			} catch (InvocationTargetException ex) {
+			} catch (IllegalArgumentException | InvocationTargetException | IllegalAccessException ex) {
 			}
 		}
 
@@ -165,31 +162,31 @@ public class MemoryUsage extends ExamplePanel {
 
 		// Format  plot
 		plot.setInsets(new Insets2D.Double(20.0, 90.0, 40.0, 20.0));
-		plot.setSetting(Plot.TITLE, "Memory Usage");
-		plot.setSetting(Plot.LEGEND, true);
+		plot.getTitle().setText("Memory Usage");
+		plot.setLegendVisible(true);
 
 		// Format legend
-		plot.getLegend().setSetting(Legend.ORIENTATION, Orientation.HORIZONTAL);
+		plot.getLegend().setOrientation(Orientation.HORIZONTAL);
 
 		// Format plot area
-		plot.getPlotArea().setSetting(XYPlot.XYPlotArea2D.GRID_MAJOR_X, false);
-		plot.getPlotArea().setSetting(XYPlot.XYPlotArea2D.GRID_MINOR_Y, true);
+		((XYPlotArea2D) plot.getPlotArea()).setMajorGridX(false);
+		((XYPlotArea2D) plot.getPlotArea()).setMinorGridY(true);
 
 		// Format axes (set scale and spacings)
 		plot.getAxis(XYPlot.AXIS_Y).setRange(0.0, 1.0);
 		AxisRenderer axisRendererX = plot.getAxisRenderer(XYPlot.AXIS_X);
-		axisRendererX.setSetting(AxisRenderer.TICKS_SPACING, BUFFER_SIZE*INTERVAL/10.0);
-		axisRendererX.setSetting(AxisRenderer.TICK_LABELS_FORMAT, DateFormat.getTimeInstance());
+		axisRendererX.setTickSpacing(BUFFER_SIZE*INTERVAL/10.0);
+		axisRendererX.setTickLabelFormat(DateFormat.getTimeInstance());
 		AxisRenderer axisRendererY = plot.getAxisRenderer(XYPlot.AXIS_Y);
-		axisRendererY.setSetting(AxisRenderer.TICKS_MINOR_COUNT, 4);
-		axisRendererY.setSetting(AxisRenderer.TICK_LABELS_FORMAT, new DecimalFormat("0 MiB"));
+		axisRendererY.setMinorTicksCount(4);
+		axisRendererY.setTickLabelFormat(new DecimalFormat("0 MiB"));
 
 		Color color1Dark = GraphicsUtils.deriveDarker(COLOR1);
 
 		// Format first data series
-		plot.setPointRenderer(memSysUsage, null);
+		plot.setPointRenderers(memSysUsage, null);
 		AreaRenderer area1 = new DefaultAreaRenderer2D();
-		area1.setSetting(AreaRenderer.COLOR, new LinearGradientPaint(
+		area1.setColor(new LinearGradientPaint(
 			0f, 0f, 0f, 1f,
 			new float[] {0f, 1f},
 			new Color[] {
@@ -197,20 +194,18 @@ public class MemoryUsage extends ExamplePanel {
 				GraphicsUtils.deriveWithAlpha(COLOR1, 24)
 			}
 		));
-		plot.setAreaRenderer(memSysUsage, area1);
+		plot.setAreaRenderers(memSysUsage, area1);
 
 		// Format second data series
-		plot.setPointRenderer(memVm, null);
+		plot.setPointRenderers(memVm, null);
 		LineRenderer line2 = new DefaultLineRenderer2D();
-		line2.setSetting(LineRenderer.COLOR,
-				GraphicsUtils.deriveWithAlpha(color1Dark, 128)
-		);
-		plot.setLineRenderer(memVm, line2);
+		line2.setColor(GraphicsUtils.deriveWithAlpha(color1Dark, 128));
+		plot.setLineRenderers(memVm, line2);
 
 		// Format third data series
-		plot.setPointRenderer(memVmUsage, null);
+		plot.setPointRenderers(memVmUsage, null);
 		AreaRenderer area3 = new DefaultAreaRenderer2D();
-		area3.setSetting(AreaRenderer.COLOR, new LinearGradientPaint(
+		area3.setColor(new LinearGradientPaint(
 				0f, 0f, 0f, 1f,
 				new float[] {0f, 1f},
 				new Color[] {
@@ -218,7 +213,7 @@ public class MemoryUsage extends ExamplePanel {
 					GraphicsUtils.deriveWithAlpha(COLOR2, 24)
 				}
 		));
-		plot.setAreaRenderer(memVmUsage, area3);
+		plot.setAreaRenderers(memVmUsage, area3);
 
 		// Add plot to frame
 		InteractivePanel plotPanel = new InteractivePanel(plot);

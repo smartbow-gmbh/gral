@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -38,8 +38,6 @@ public class DataSeries extends AbstractDataSource implements DataListener {
 	private final DataSource data;
 	/** Columns that should be mapped to the series. */
 	private final List<Integer> cols;
-	/** Name of the data series. */
-	private String name;
 
 	/**
 	 * Constructor without name. The first column will be column
@@ -64,13 +62,13 @@ public class DataSeries extends AbstractDataSource implements DataListener {
 	 */
 	@SuppressWarnings("unchecked")
 	public DataSeries(String name, DataSource data, int... cols) {
+		super(name);
 		this.data = data;
-		this.cols = new ArrayList<Integer>();
-		this.name = name;
+		this.cols = new ArrayList<>();
 		this.data.addDataListener(this);
 
 		Class<? extends Comparable<?>>[] typesOrig = data.getColumnTypes();
-		Class<? extends Comparable<?>>[] types = null;
+		Class<? extends Comparable<?>>[] types;
 
 		if (cols.length > 0) {
 			types = new Class[cols.length];
@@ -87,22 +85,6 @@ public class DataSeries extends AbstractDataSource implements DataListener {
 		}
 
 		setColumnTypes(types);
-	}
-
-	/**
-	 * Returns the name of this series.
-	 * @return a name string
-	 */
-	public String getName() {
-		return name;
-	}
-
-	/**
-	 * Sets the name of this series.
-	 * @param name name to be set
-	 */
-	public void setName(String name) {
-		this.name = name;
 	}
 
 	/**

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -28,23 +28,21 @@ import org.junit.runners.Suite;
 import de.erichseifert.gral.plots.areas.AreasTests;
 import de.erichseifert.gral.plots.axes.AxesTests;
 import de.erichseifert.gral.plots.colors.ColorsTests;
+import de.erichseifert.gral.plots.legends.LegendsTests;
 import de.erichseifert.gral.plots.lines.LinesTests;
 import de.erichseifert.gral.plots.points.PointsTests;
-import de.erichseifert.gral.plots.settings.SettingsTests;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 	// Tests for sub-packages
-	SettingsTests.class,
 	AxesTests.class,
 	ColorsTests.class,
 	AreasTests.class,
 	LinesTests.class,
 	PointsTests.class,
+	LegendsTests.class,
 	// Tests for classes
-	LabelTest.class,
 	PlotAreaTest.class,
-	LegendTest.class,
 	PlotTest.class,
 	XYPlotTest.class,
 	PiePlotTest.class,

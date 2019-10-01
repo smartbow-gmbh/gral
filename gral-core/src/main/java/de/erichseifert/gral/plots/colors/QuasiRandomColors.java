@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -52,7 +52,7 @@ public class QuasiRandomColors extends IndexedColorMapper {
 	 * Creates a new QuasiRandomColors object with default color variance.
 	 */
 	public QuasiRandomColors() {
-		colorCache = new HashMap<Integer, Color>();
+		colorCache = new HashMap<>();
 		colorVariance = new float[] {
 			0.00f, 1.00f,  // Hue
 			0.75f, 0.25f,  // Saturation
@@ -67,7 +67,7 @@ public class QuasiRandomColors extends IndexedColorMapper {
 	 */
 	@Override
 	public Paint get(int index) {
-		Integer key = Integer.valueOf(index);
+		Integer key = index;
 		if (colorCache.containsKey(key)) {
 			return colorCache.get(key);
 		}

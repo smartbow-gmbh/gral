@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -29,14 +29,12 @@ import java.awt.geom.Ellipse2D;
 import de.erichseifert.gral.data.DataSeries;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.examples.ExamplePanel;
-import de.erichseifert.gral.plots.Plot;
 import de.erichseifert.gral.plots.XYPlot;
-import de.erichseifert.gral.plots.axes.AxisRenderer;
-import de.erichseifert.gral.plots.points.PointRenderer;
+import de.erichseifert.gral.plots.XYPlot.XYPlotArea2D;
 import de.erichseifert.gral.plots.points.SizeablePointRenderer;
 import de.erichseifert.gral.ui.InteractivePanel;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Insets2D;
+import de.erichseifert.gral.graphics.Insets2D;
 
 
 public class SpiralPlot extends ExamplePanel {
@@ -64,29 +62,30 @@ public class SpiralPlot extends ExamplePanel {
 
 		// Format plot
 		plot.setInsets(new Insets2D.Double(40.0));  // Add a margin to the plot
-		plot.setSetting(Plot.BACKGROUND, new Color(0.75f, 0.75f, 0.75f));
+		plot.setBackground(new Color(0.75f, 0.75f, 0.75f));
 
 		// Format plot area
-		plot.getPlotArea().setSetting(XYPlot.XYPlotArea2D.BORDER, null);        // Remove border of plot area
-		plot.getPlotArea().setSetting(XYPlot.XYPlotArea2D.GRID_MAJOR_X, false); // Disable vertical grid
-		plot.getPlotArea().setSetting(XYPlot.XYPlotArea2D.GRID_MAJOR_Y, false); // Disable horizontal grid
-		plot.getPlotArea().setSetting(XYPlot.XYPlotArea2D.CLIPPING, null);      // Disable clipping
+		XYPlotArea2D plotArea = (XYPlotArea2D) plot.getPlotArea();
+		plotArea.setBorderColor(null);   // Remove border of plot area
+		plotArea.setMajorGridX(false);   // Disable vertical grid
+		plotArea.setMajorGridY(false);   // Disable horizontal grid
+		plotArea.setClippingArea(null);  // Disable clipping
 
 		// Format axes
-		plot.getAxisRenderer(XYPlot.AXIS_X).setSetting(AxisRenderer.SHAPE_VISIBLE, false);  // Disable x axis
-		plot.getAxisRenderer(XYPlot.AXIS_X).setSetting(AxisRenderer.TICKS, false);          // Disable tick marks on x axis
-		plot.getAxisRenderer(XYPlot.AXIS_Y).setSetting(AxisRenderer.SHAPE_VISIBLE, false);  // Disable y axis
-		plot.getAxisRenderer(XYPlot.AXIS_Y).setSetting(AxisRenderer.TICKS, false);          // Disable tick marks on y axis
+		plot.getAxisRenderer(XYPlot.AXIS_X).setShapeVisible(false);  // Disable x axis
+		plot.getAxisRenderer(XYPlot.AXIS_X).setTicksVisible(false);  // Disable tick marks on x axis
+		plot.getAxisRenderer(XYPlot.AXIS_Y).setShapeVisible(false);  // Disable y axis
+		plot.getAxisRenderer(XYPlot.AXIS_Y).setTicksVisible(false);  // Disable tick marks on y axis
 		plot.getAxis(XYPlot.AXIS_X).setRange(-10.0, 10.0);  // Scale x axis from -10 to 10
 		plot.getAxis(XYPlot.AXIS_Y).setRange(-10.0, 10.0);  // Scale y axis from -10 to 10
 
 		// Format data series
 		Color color = GraphicsUtils.deriveWithAlpha(COLOR1, 96);
-		PointRenderer pointRenderer = new SizeablePointRenderer();
-		pointRenderer.setSetting(PointRenderer.SHAPE, new Ellipse2D.Double(-0.5, -0.5, 1.0, 1.0));  // shape of data points
-		pointRenderer.setSetting(PointRenderer.COLOR, color);  // color of data points
-		pointRenderer.setSetting(SizeablePointRenderer.COLUMN, 2);  // data column which determines the scaling of data point shapes
-		plot.setPointRenderer(series, pointRenderer);  // Assign the point renderer to the data series
+		SizeablePointRenderer pointRenderer = new SizeablePointRenderer();
+		pointRenderer.setShape(new Ellipse2D.Double(-0.5, -0.5, 1.0, 1.0));  // shape of data points
+		pointRenderer.setColor(color);  // color of data points
+		pointRenderer.setColumn(2);  // data column which determines the scaling of data point shapes
+		plot.setPointRenderers(series, pointRenderer);  // Assign the point renderer to the data series
 
 		add(new InteractivePanel(plot), BorderLayout.CENTER);  // Add the plot to the Swing component
 	}

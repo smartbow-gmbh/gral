@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -68,7 +68,7 @@ public class IndexedColorsTest {
 	}
 
 	@Test
-	public void testGetCiricular() {
+	public void testGetCircular() {
 		IndexedColors c = new IndexedColors(Color.RED, Color.GREEN, Color.BLUE);
 		c.setMode(Mode.CIRCULAR);
 		assertEquals(Color.BLUE,  c.get(-1));

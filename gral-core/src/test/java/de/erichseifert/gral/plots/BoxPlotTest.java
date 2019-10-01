@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,28 +21,30 @@
  */
 package de.erichseifert.gral.plots;
 
-import static de.erichseifert.gral.TestUtils.assertNotEmpty;
-import static de.erichseifert.gral.TestUtils.createTestImage;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import static de.erichseifert.gral.TestUtils.assertNotEmpty;
+import static de.erichseifert.gral.TestUtils.createTestImage;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import de.erichseifert.gral.TestUtils;
 import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DummyData;
 import de.erichseifert.gral.data.EnumeratedData;
 import de.erichseifert.gral.graphics.DrawingContext;
+import de.erichseifert.gral.plots.BoxPlot.BoxWhiskerRenderer;
+import de.erichseifert.gral.plots.points.PointRenderer;
+import org.junit.Before;
+import org.junit.Test;
 
 public class BoxPlotTest {
+	private static final double DELTA = TestUtils.DELTA;
+
 	private DataSource data;
 	private MockBoxPlot plot;
 
@@ -67,20 +69,6 @@ public class BoxPlotTest {
 	public void setUp() {
 		data = new EnumeratedData(new DummyData(5, 3, 1.0));
 		plot = new MockBoxPlot(data);
-	}
-
-	@Test
-	public void testSettings() {
-		// Get
-		assertNull(plot.getSetting(Plot.BACKGROUND));
-
-		// Set
-		plot.setSetting(Plot.BACKGROUND, Color.WHITE);
-		assertEquals(Color.WHITE, plot.<String>getSetting(Plot.BACKGROUND));
-
-		// Remove
-		plot.removeSetting(Plot.BACKGROUND);
-		assertNull(plot.getSetting(Plot.BACKGROUND));
 	}
 
 	@Test
@@ -110,9 +98,48 @@ public class BoxPlotTest {
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		Plot original = plot;
-		Plot deserialized = TestUtils.serializeAndDeserialize(original);
+		BoxPlot original = plot;
+		BoxPlot deserialized = TestUtils.serializeAndDeserialize(original);
 
-		TestUtils.assertSettings(original, deserialized);
+		assertEquals(original.getBackground(), deserialized.getBackground());
+		assertEquals(original.getBorderStroke(), deserialized.getBorderStroke());
+		assertEquals(original.getBorderColor(), deserialized.getBorderColor());
+		assertEquals(original.isLegendVisible(), deserialized.isLegendVisible());
+		assertEquals(original.getLegendLocation(), deserialized.getLegendLocation());
+		assertEquals(original.getLegendDistance(), deserialized.getLegendDistance(), DELTA);
+
+		List<DataSource> dataSourcesOriginal = original.getData();
+		List<DataSource> dataSourcesDeserialized = deserialized.getData();
+		assertEquals(dataSourcesOriginal.size(), dataSourcesDeserialized.size());
+		for (int index = 0; index < dataSourcesOriginal.size(); index++) {
+			List<PointRenderer> pointRenderersOriginal = original.getPointRenderers(
+							dataSourcesOriginal.get(index));
+			List<PointRenderer> pointRenderersDeserialized = deserialized.getPointRenderers(
+							dataSourcesDeserialized.get(index));
+			testPointRendererSerialization(pointRenderersOriginal, pointRenderersDeserialized);
+		}
     }
+
+	private static void testPointRendererSerialization(
+			List<PointRenderer> originalRenderers, List<PointRenderer> deserializedRenderers) {
+		for (int rendererIndex = 0; rendererIndex < originalRenderers.size(); rendererIndex++) {
+			BoxWhiskerRenderer original = (BoxWhiskerRenderer) originalRenderers.get(rendererIndex);
+			BoxWhiskerRenderer deserialized = (BoxWhiskerRenderer) deserializedRenderers.get(rendererIndex);
+			assertEquals(original.getPositionColumn(), deserialized.getPositionColumn());
+			assertEquals(original.getCenterBarColumn(), deserialized.getCenterBarColumn());
+			assertEquals(original.getBottomBarColumn(), deserialized.getBottomBarColumn());
+			assertEquals(original.getBoxBottomColumn(), deserialized.getBoxBottomColumn());
+			assertEquals(original.getBoxTopColumn(), deserialized.getBoxTopColumn());
+			assertEquals(original.getTopBarColumn(), deserialized.getTopBarColumn());
+			assertEquals(original.getBoxWidth(), deserialized.getBoxWidth(), DELTA);
+			assertEquals(original.getBoxBackground(), deserialized.getBoxBackground());
+			assertEquals(original.getBoxBorderColor(), deserialized.getBoxBorderColor());
+			assertEquals(original.getBoxBorderStroke(), deserialized.getBoxBorderStroke());
+			assertEquals(original.getWhiskerColor(), deserialized.getWhiskerColor());
+			assertEquals(original.getWhiskerStroke(), deserialized.getWhiskerStroke());
+			assertEquals(original.getBarWidth(), deserialized.getBarWidth(), DELTA);
+			assertEquals(original.getCenterBarColor(), deserialized.getCenterBarColor());
+			assertEquals(original.getCenterBarStroke(), deserialized.getCenterBarStroke());
+		}
+	}
 }

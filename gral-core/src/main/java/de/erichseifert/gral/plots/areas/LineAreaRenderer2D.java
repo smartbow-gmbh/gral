@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -35,7 +35,6 @@ import de.erichseifert.gral.graphics.DrawingContext;
 import de.erichseifert.gral.plots.DataPoint;
 import de.erichseifert.gral.plots.axes.Axis;
 import de.erichseifert.gral.plots.axes.AxisRenderer;
-import de.erichseifert.gral.plots.settings.Key;
 import de.erichseifert.gral.util.GraphicsUtils;
 import de.erichseifert.gral.util.MathUtils;
 import de.erichseifert.gral.util.PointND;
@@ -48,15 +47,15 @@ public class LineAreaRenderer2D extends AbstractAreaRenderer {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = -8396097579938931392L;
 
-	/** Key for specifying the {@link java.awt.Stroke} instance that is used
-	draw the lines from the data points to the axis. */
-	public static final Key STROKE = new Key("linearea.stroke"); //$NON-NLS-1$
+	/** Stroke that is used to draw the lines from the data points to the
+	 * axis. */
+	private Stroke stroke;
 
 	/**
 	 * Standard constructor that initializes a new instance.
 	 */
 	public LineAreaRenderer2D() {
-		setSettingDefault(STROKE, new BasicStroke(1f));
+		stroke = new BasicStroke(1f);
 	}
 
 	/**
@@ -76,7 +75,7 @@ public class LineAreaRenderer2D extends AbstractAreaRenderer {
 			 * @param context Environment used for drawing
 			 */
 			public void draw(DrawingContext context) {
-				Paint paint = LineAreaRenderer2D.this.getSetting(COLOR);
+				Paint paint = LineAreaRenderer2D.this.getColor();
 				GraphicsUtils.fillPaintedShape(context.getGraphics(),
 					shape, paint, null);
 			}
@@ -115,7 +114,25 @@ public class LineAreaRenderer2D extends AbstractAreaRenderer {
 			shape.lineTo(x, posYOrigin);
 		}
 
-		Stroke stroke = getSetting(STROKE);
-		return punch(stroke.createStrokedShape(shape), points);
+		Stroke stroke = getStroke();
+		return stroke.createStrokedShape(shape);
+	}
+
+	/**
+	 * Returns the stroke that is used to draw the lines from the
+	 * data points to the axis.
+	 * @return Stroke for line drawing.
+	 */
+	public Stroke getStroke() {
+		return stroke;
+	}
+
+	/**
+	 * Set the stroke that is used to draw the lines from the
+	 * data points to the axis.
+	 * @param stroke Stroke for line drawing.
+	 */
+	public void setStroke(Stroke stroke) {
+		this.stroke = stroke;
 	}
 }

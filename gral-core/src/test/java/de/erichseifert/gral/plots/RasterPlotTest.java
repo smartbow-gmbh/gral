@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,27 +21,29 @@
  */
 package de.erichseifert.gral.plots;
 
-import static de.erichseifert.gral.TestUtils.assertNotEmpty;
-import static de.erichseifert.gral.TestUtils.createTestImage;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import static de.erichseifert.gral.TestUtils.assertNotEmpty;
+import static de.erichseifert.gral.TestUtils.createTestImage;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import de.erichseifert.gral.TestUtils;
 import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DummyData;
 import de.erichseifert.gral.graphics.DrawingContext;
+import de.erichseifert.gral.plots.RasterPlot.RasterRenderer;
+import de.erichseifert.gral.plots.points.PointRenderer;
+import org.junit.Before;
+import org.junit.Test;
 
 public class RasterPlotTest {
+	private static final double DELTA = TestUtils.DELTA;
+
 	private DataSource data;
 	private MockRasterPlot plot;
 
@@ -66,20 +68,6 @@ public class RasterPlotTest {
 	public void setUp() {
 		data = new DummyData(2, 12, 1.0);
 		plot = new MockRasterPlot(data);
-	}
-
-	@Test
-	public void testSettings() {
-		// Get
-		assertNull(plot.getSetting(Plot.BACKGROUND));
-
-		// Set
-		plot.setSetting(Plot.BACKGROUND, Color.WHITE);
-		assertEquals(Color.WHITE, plot.<String>getSetting(Plot.BACKGROUND));
-
-		// Remove
-		plot.removeSetting(Plot.BACKGROUND);
-		assertNull(plot.getSetting(Plot.BACKGROUND));
 	}
 
 	@Test
@@ -109,9 +97,40 @@ public class RasterPlotTest {
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		Plot original = plot;
-		Plot deserialized = TestUtils.serializeAndDeserialize(original);
+		RasterPlot original = plot;
+		RasterPlot deserialized = TestUtils.serializeAndDeserialize(original);
 
-		TestUtils.assertSettings(original, deserialized);
+		assertEquals(original.getBackground(), deserialized.getBackground());
+		assertEquals(original.getBorderStroke(), deserialized.getBorderStroke());
+		assertEquals(original.getBorderColor(), deserialized.getBorderColor());
+		assertEquals(original.isLegendVisible(), deserialized.isLegendVisible());
+		assertEquals(original.getLegendLocation(), deserialized.getLegendLocation());
+		assertEquals(original.getLegendDistance(), deserialized.getLegendDistance(), DELTA);
+
+		assertEquals(original.getOffset(), deserialized.getOffset());
+		assertEquals(original.getDistance(), deserialized.getDistance());
+		assertEquals(original.getColors(), deserialized.getColors());
+
+		List<DataSource> dataSourcesOriginal = original.getData();
+		List<DataSource> dataSourcesDeserialized = deserialized.getData();
+		assertEquals(dataSourcesOriginal.size(), dataSourcesDeserialized.size());
+		for (int index = 0; index < dataSourcesOriginal.size(); index++) {
+			List<PointRenderer> pointRenderersOriginal = original.getPointRenderers(
+					dataSourcesOriginal.get(index));
+			List<PointRenderer> pointRenderersDeserialized = deserialized.getPointRenderers(
+					dataSourcesDeserialized.get(index));
+			testPointRendererSerialization(pointRenderersOriginal, pointRenderersDeserialized);
+		}
     }
+
+	private static void testPointRendererSerialization(
+			List<PointRenderer> originalRenderers, List<PointRenderer> deserializedRenderers) {
+		for (int rendererIndex = 0; rendererIndex < originalRenderers.size(); rendererIndex++) {
+			RasterRenderer original = (RasterRenderer) originalRenderers.get(rendererIndex);
+			RasterRenderer deserialized = (RasterRenderer) deserializedRenderers.get(rendererIndex);
+			assertEquals(original.getXColumn(), deserialized.getXColumn());
+			assertEquals(original.getYColumn(), deserialized.getYColumn());
+			assertEquals(original.getValueColumn(), deserialized.getValueColumn());
+		}
+	}
 }

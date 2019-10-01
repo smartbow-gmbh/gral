@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -151,8 +151,8 @@ public class ResizeTest {
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		Filter original = new Resize(dataDiagonal, 2, 2);
-		Filter deserialized = TestUtils.serializeAndDeserialize(original);
+		Filter2D original = new Resize(dataDiagonal, 2, 2);
+		Filter2D deserialized = TestUtils.serializeAndDeserialize(original);
 
     	// Test metadata
     	assertEquals(original.getMode(), deserialized.getMode());

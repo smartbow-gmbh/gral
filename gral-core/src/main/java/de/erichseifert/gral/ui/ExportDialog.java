@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -52,12 +52,12 @@ public class ExportDialog extends JDialog {
 	private static final long serialVersionUID = -1344719157074981540L;
 
 	/** Type of user feedback. */
-	public static enum UserAction {
+	public enum UserAction {
 		/** User confirmed dialog. */
 		APPROVE,
 		/** User canceled or closed dialog. */
 		CANCEL
-	};
+	}
 
 	/** Bounding rectangle for document. */
 	private final Rectangle2D documentBounds;
@@ -213,7 +213,7 @@ public class ExportDialog extends JDialog {
 	/**
 	 * Sets the type of action the user executed. The value can later be used
 	 * to determine whether the user approved or canceled the dialog.
-	 * @param Type of user action.
+	 * @param userAction Type of user action.
 	 */
 	private void setUserAction(UserAction userAction) {
 		this.userAction = userAction;

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -60,7 +60,7 @@ public class NavigationListenerTest {
 	@Test
 	public void testCenterChanged() {
 		assertNull(listener.center);
-		PointND<Double> centerNew = new PointND<Double>(1.2, 3.4);
+		PointND<Double> centerNew = new PointND<>(1.2, 3.4);
 		navigator.setCenter(centerNew);
 		assertEquals(centerNew, listener.center);
 	}
@@ -77,7 +77,7 @@ public class NavigationListenerTest {
 	public void testRemove() {
 		navigator.removeNavigationListener(listener);
 
-		PointND<Double> centerNew = new PointND<Double>(1.2, 3.4);
+		PointND<Double> centerNew = new PointND<>(1.2, 3.4);
 		navigator.setCenter(centerNew);
 		assertNull(listener.zoom);
 

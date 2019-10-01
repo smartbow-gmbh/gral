@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -80,15 +80,17 @@ public class CSVReader extends AbstractDataReader {
 	/**
 	 * Token types for analyzing CSV or TSV input.
 	 */
-	private static enum CSVTokenType {
+	private enum CSVTokenType {
+		/** Type for text tokens containing empty content. */
+		EMPTY_SPACE,
 		/** Type for text tokens containing value content. */
 		TEXT,
 		/** Type for quotes that may wrap value content. */
 		QUOTE,
 		/** Type for row separators. */
-		ROW,
+		ROW_SEPARATOR,
 		/** Type for column separators. */
-		COLUMN,
+		COLUMN_SEPARATOR,
 	}
 
 	/**
@@ -107,10 +109,11 @@ public class CSVReader extends AbstractDataReader {
 
 			// Basic Set of rules for analyzing CSV content
 			putRules(
-				new Rule("\n|\r\n|\r", CSVTokenType.ROW),
-				new Rule("\\s*("+Pattern.quote(String.valueOf(separator))+")\\s*",
-					CSVTokenType.COLUMN),
+				new Rule("\n|\r\n|\r", CSVTokenType.ROW_SEPARATOR),
+				new Rule(Pattern.quote(String.valueOf(separator)),
+						CSVTokenType.COLUMN_SEPARATOR),
 				new Rule("\"", CSVTokenType.QUOTE, "quoted"),
+				new Rule("[ \t]+", CSVTokenType.EMPTY_SPACE),
 				new Rule(".", CSVTokenType.TEXT)
 			);
 			// Set of rules that is valid inside quoted content
@@ -131,9 +134,9 @@ public class CSVReader extends AbstractDataReader {
 	public CSVReader(String mimeType) {
 		super(mimeType);
 		if ("text/tab-separated-values".equals(mimeType)) { //$NON-NLS-1$
-			setDefault(SEPARATOR_CHAR, '\t'); //$NON-NLS-1$ //$NON-NLS-2$
+			setDefault(SEPARATOR_CHAR, '\t');
 		} else {
-			setDefault(SEPARATOR_CHAR, ','); //$NON-NLS-1$ //$NON-NLS-2$
+			setDefault(SEPARATOR_CHAR, ',');
 		}
 	}
 
@@ -158,15 +161,16 @@ public class CSVReader extends AbstractDataReader {
 
 		// Add row token if there was no trailing line break
 		Token lastToken = tokens.get(tokens.size() - 1);
-		if (lastToken.getType() != CSVTokenType.ROW) {
-			Token eof = new Token(lastToken.getEnd(), lastToken.getEnd(), CSVTokenType.ROW, "");
+		if (lastToken.getType() != CSVTokenType.ROW_SEPARATOR) {
+			Token eof = new Token(lastToken.getEnd(), lastToken.getEnd(),
+				CSVTokenType.ROW_SEPARATOR, "");
 			tokens.add(eof);
 		}
 
 		// Find methods for all column data types that can be used to convert
 		// the text to the column data type
 		Map<Class<? extends Comparable<?>>, Method> parseMethods =
-			new HashMap<Class<? extends Comparable<?>>, Method>();
+				new HashMap<>();
 		for (Class<? extends Comparable<?>> type : types) {
 			if (parseMethods.containsKey(type)) {
 				continue;
@@ -179,16 +183,17 @@ public class CSVReader extends AbstractDataReader {
 
 		// Process the data and store the data.
 		DataTable data = new DataTable(types);
-		List<Comparable<?>> row = new LinkedList<Comparable<?>>();
+		List<Comparable<?>> row = new LinkedList<>();
 		int rowIndex = 0;
 		int colIndex = 0;
-		String cellContent = "";
+		StringBuilder cellContent = new StringBuilder();
 		for (Token token : tokens) {
-			if (token.getType() == CSVTokenType.TEXT) {
+			if (token.getType() == CSVTokenType.TEXT ||
+					token.getType() == CSVTokenType.EMPTY_SPACE) {
 				// Store the token text
-				cellContent = token.getContent();
-			} else if (token.getType() == CSVTokenType.COLUMN ||
-					token.getType() == CSVTokenType.ROW) {
+				cellContent.append(token.getContent());
+			} else if (token.getType() == CSVTokenType.COLUMN_SEPARATOR ||
+					token.getType() == CSVTokenType.ROW_SEPARATOR) {
 				// Check for a valid number of columns
 				if (colIndex >= types.length) {
 					throw new IllegalArgumentException(MessageFormat.format(
@@ -200,10 +205,11 @@ public class CSVReader extends AbstractDataReader {
 				// rows don't have a trailing column token
 				Class<? extends Comparable<?>> colType = types[colIndex];
 				Method parseMethod = parseMethods.get(colType);
+				Comparable<?> cell = null;
 				try {
-					Comparable<?> cell = (Comparable<?>) parseMethod.invoke(
-						null, cellContent);
-					row.add(cell);
+					cell = (Comparable<?>) parseMethod.invoke(
+						null, cellContent.toString().trim());
+
 				} catch (IllegalArgumentException e) {
 					throw new RuntimeException(MessageFormat.format(
 						"Could not invoke method for parsing data type {0} in column {1,number,integer}.", //$NON-NLS-1$
@@ -213,13 +219,16 @@ public class CSVReader extends AbstractDataReader {
 						"Could not access method for parsing data type {0} in column {1,number,integer}.", //$NON-NLS-1$
 						types[colIndex].getSimpleName(), colIndex));
 				} catch (InvocationTargetException e) {
-					throw new IOException(MessageFormat.format(
-						"Type mismatch in line {0,number,integer}, column {1,number,integer}: got \"{2}\", but expected {3} value.", //$NON-NLS-1$
-						rowIndex + 1, colIndex + 1, cellContent, colType.getSimpleName()));
+					if (cellContent.length() > 0) {
+						throw new IOException(MessageFormat.format(
+							"Type mismatch in line {0,number,integer}, column {1,number,integer}: got \"{2}\", but expected {3} value.", //$NON-NLS-1$
+							rowIndex + 1, colIndex + 1, cellContent.toString(), colType.getSimpleName()));
+					}
 				}
+				row.add(cell);
 				colIndex++;
 
-				if (token.getType() == CSVTokenType.ROW) {
+				if (token.getType() == CSVTokenType.ROW_SEPARATOR) {
 					// Check for a valid number of columns
 					if (row.size() < types.length) {
 						throw new IllegalArgumentException(MessageFormat.format(
@@ -234,8 +243,8 @@ public class CSVReader extends AbstractDataReader {
 					// Start a new row
 					row.clear();
 					colIndex = 0;
-					cellContent = "";
 				}
+				cellContent = new StringBuilder();
 			}
 		}
 
@@ -254,11 +263,10 @@ public class CSVReader extends AbstractDataReader {
 			try {
 				parse = String.class.getMethod("valueOf", Object.class);
 			} catch (NoSuchMethodException e) {
-				parse = null;
 			}
 		} else {
 			for (Method m : c.getMethods()) {
-				boolean isStatic = m.toString().indexOf("static") >= 0; //$NON-NLS-1$
+				boolean isStatic = m.toString().contains("static"); //$NON-NLS-1$
 				if (!isStatic) {
 					continue;
 				}
@@ -268,8 +276,9 @@ public class CSVReader extends AbstractDataReader {
 				if (!hasStringParameter) {
 					continue;
 				}
-				boolean parseName = m.getName().startsWith("parse"); //$NON-NLS-1$
-				if (!parseName) {
+				// Check method name for a pattern like "parseInt*" for Integer or
+				// "parseSho*" for Short to avoid collisions
+				if (!m.getName().startsWith("parse" + c.getSimpleName().substring(0, 3))) {  //$NON-NLS-1$
 					continue;
 				}
 				parse = m;

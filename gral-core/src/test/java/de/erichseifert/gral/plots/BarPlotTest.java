@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,24 +21,27 @@
  */
 package de.erichseifert.gral.plots;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.awt.Color;
+import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import de.erichseifert.gral.TestUtils;
 import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DummyData;
 import de.erichseifert.gral.graphics.DrawingContext;
+import de.erichseifert.gral.plots.BarPlot.BarRenderer;
+import de.erichseifert.gral.plots.points.PointRenderer;
+import org.junit.Before;
+import org.junit.Test;
 
 public class BarPlotTest {
+	private static final double DELTA = TestUtils.DELTA;
+
 	private MockBarPlot plot;
 
 	private static final class MockBarPlot extends BarPlot {
@@ -62,20 +65,9 @@ public class BarPlotTest {
 	public void setUp() {
 		DataSource data = new DummyData(2, 1, 1.0);
 		plot = new MockBarPlot(data);
-	}
 
-	@Test
-	public void testSettings() {
-		// Get
-		assertNull(plot.getSetting(Plot.BACKGROUND));
-
-		// Set
-		plot.setSetting(Plot.BACKGROUND, Color.WHITE);
-		assertEquals(Color.WHITE, plot.<String>getSetting(Plot.BACKGROUND));
-
-		// Remove
-		plot.removeSetting(Plot.BACKGROUND);
-		assertNull(plot.getSetting(Plot.BACKGROUND));
+		BarRenderer pointRenderer = (BarRenderer) plot.getPointRenderers(data).get(0);
+		pointRenderer.setBorderStroke(new BasicStroke());
 	}
 
 	@Test
@@ -91,9 +83,39 @@ public class BarPlotTest {
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		Plot original = plot;
-		Plot deserialized = TestUtils.serializeAndDeserialize(original);
+		BarPlot original = plot;
+		BarPlot deserialized = TestUtils.serializeAndDeserialize(original);
 
-		TestUtils.assertSettings(original, deserialized);
+		assertEquals(original.getBackground(), deserialized.getBackground());
+		assertEquals(original.getBorderStroke(), deserialized.getBorderStroke());
+		assertEquals(original.getBorderColor(), deserialized.getBorderColor());
+		assertEquals(original.isLegendVisible(), deserialized.isLegendVisible());
+		assertEquals(original.getLegendLocation(), deserialized.getLegendLocation());
+		assertEquals(original.getLegendDistance(), deserialized.getLegendDistance(), DELTA);
+
+		assertEquals(original.getBarWidth(), deserialized.getBarWidth(), DELTA);
+		assertEquals(original.getBarHeightMin(), deserialized.getBarHeightMin(), DELTA);
+		assertEquals(original.isPaintAllBars(), deserialized.isPaintAllBars());
+
+		List<DataSource> dataSourcesOriginal = original.getData();
+		List<DataSource> dataSourcesDeserialized = deserialized.getData();
+		assertEquals(dataSourcesOriginal.size(), dataSourcesDeserialized.size());
+		for (int index = 0; index < dataSourcesOriginal.size(); index++) {
+			List<PointRenderer> pointRenderersOriginal = original.getPointRenderers(
+					dataSourcesOriginal.get(index));
+			List<PointRenderer> pointRenderersDeserialized = deserialized.getPointRenderers(
+					dataSourcesDeserialized.get(index));
+			testPointRendererSerialization(pointRenderersOriginal, pointRenderersDeserialized);
+		}
     }
+
+	private static void testPointRendererSerialization(
+			List<PointRenderer> originalRenderers, List<PointRenderer> deserializedRenderers) {
+		for (int rendererIndex = 0; rendererIndex < originalRenderers.size(); rendererIndex++) {
+			BarRenderer original = (BarRenderer) originalRenderers.get(rendererIndex);
+			BarRenderer deserialized = (BarRenderer) deserializedRenderers.get(rendererIndex);
+			assertEquals(original.getBorderStroke(), deserialized.getBorderStroke());
+			assertEquals(original.getBorderColor(), deserialized.getBorderColor());
+		}
+	}
 }

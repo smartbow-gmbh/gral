@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -46,8 +46,9 @@ import de.erichseifert.gral.data.DataSeries;
 import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.graphics.DrawingContext;
+import de.erichseifert.gral.graphics.Label;
 import de.erichseifert.gral.plots.axes.Axis;
-import de.erichseifert.gral.util.Insets2D;
+import de.erichseifert.gral.graphics.Insets2D;
 
 public class PlotTest {
 	private static final double DELTA = 1e-15;
@@ -160,24 +161,10 @@ public class PlotTest {
 	}
 
 	@Test
-	public void testSettings() {
-		// Get
-		assertNull(plot.getSetting(Plot.TITLE));
-
-		// Set
-		plot.setSetting(Plot.TITLE, "foobar");
-		assertEquals("foobar", plot.<String>getSetting(Plot.TITLE));
-
-		// Remove
-		plot.removeSetting(Plot.TITLE);
-		assertNull(plot.getSetting(Plot.TITLE));
-	}
-
-	@Test
 	public void testDraw() {
-		plot.setSetting(Plot.TITLE, "foobar");
-		plot.setSetting(Plot.BACKGROUND, Color.WHITE);
-		plot.setSetting(Plot.BORDER, new BasicStroke(1f));
+		plot.getTitle().setText("foobar");
+		plot.setBackground(Color.WHITE);
+		plot.setBorderStroke(new BasicStroke(1f));
 
 		BufferedImage image = createTestImage();
 		plot.setBounds(0.0, 0.0, image.getWidth(), image.getHeight());
@@ -214,7 +201,7 @@ public class PlotTest {
 
 	@Test
 	public void testDataRemove() {
-		int sizeBefore = 0, size = 0;
+		int sizeBefore, size;
 
 		// Remove
 		sizeBefore = plot.getData().size();
@@ -230,7 +217,7 @@ public class PlotTest {
 
 	@Test
 	public void testDataAdd() {
-		int sizeBefore = 0, size = 0;
+		int sizeBefore, size;
 
 		// Append
 		DataSeries series3 = new DataSeries("series3", table, 0, 2);
@@ -267,7 +254,7 @@ public class PlotTest {
 		List<DataSource> visible = plot.getVisibleData();
 		assertEquals(all.size(), visible.size());
 		for (int i = 0; i < all.size(); i++) {
-			assertEquals(all.get(i), all.get(i));
+			assertEquals(all.get(i), visible.get(i));
 		}
 		plot.setVisible(series1, false);
 		assertEquals(visible.size() - 1, plot.getVisibleData().size());
@@ -279,6 +266,11 @@ public class PlotTest {
 		Plot original = plot;
 		Plot deserialized = TestUtils.serializeAndDeserialize(original);
 
-		TestUtils.assertSettings(original, deserialized);
-    }
+		assertEquals(original.getBackground(), deserialized.getBackground());
+		assertEquals(original.getBorderStroke(), deserialized.getBorderStroke());
+		assertEquals(original.getBorderColor(), deserialized.getBorderColor());
+		assertEquals(original.isLegendVisible(), deserialized.isLegendVisible());
+		assertEquals(original.getLegendLocation(), deserialized.getLegendLocation());
+		assertEquals(original.getLegendDistance(), deserialized.getLegendDistance(), DELTA);
+	}
 }

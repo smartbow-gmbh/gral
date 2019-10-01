@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -23,18 +23,15 @@ package de.erichseifert.gral.plots.lines;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Paint;
 import java.awt.Shape;
 import java.awt.Stroke;
-import java.awt.geom.Area;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
-import de.erichseifert.gral.plots.DataPoint;
-import de.erichseifert.gral.plots.settings.BasicSettingsStorage;
-import de.erichseifert.gral.plots.settings.SettingChangeEvent;
-import de.erichseifert.gral.plots.settings.SettingsListener;
-import de.erichseifert.gral.util.GeometryUtils;
-import de.erichseifert.gral.util.MathUtils;
+import de.erichseifert.gral.util.SerializationUtils;
 
 
 /**
@@ -45,63 +42,42 @@ import de.erichseifert.gral.util.MathUtils;
  *   <li>Administration of settings</li>
  * </ul>
  */
-public abstract class AbstractLineRenderer2D extends BasicSettingsStorage
-		implements LineRenderer, SettingsListener {
+public abstract class AbstractLineRenderer2D implements LineRenderer, Serializable {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = -4172505541305453796L;
+
+	/** Stroke to draw the line. */
+	private transient Stroke stroke;
+	/** Gap between points and the line. */
+	private double gap;
+	/** Decides whether the shape of the gap between points and the line is
+	 * rounded. */
+	private boolean gapRounded;
+	/** Paint to fill the line. */
+	private Paint color;
 
 	/**
 	 * Initializes a new {@code AbstractLineRenderer2D} instance with
 	 * default settings.
 	 */
 	public AbstractLineRenderer2D() {
-		addSettingsListener(this);
-
-		setSettingDefault(STROKE, new BasicStroke(1.5f));
-		setSettingDefault(GAP, 0.0);
-		setSettingDefault(GAP_ROUNDED, false);
-		setSettingDefault(COLOR, Color.BLACK);
+		stroke = new BasicStroke(1.5f);
+		gap = 0.0;
+		gapRounded = false;
+		color = Color.BLACK;
 	}
 
 	/**
-	 * Returns the shape of a line from which the shapes of the specified
-	 * points are subtracted.
+	 * Returns the stroked shape of the specified line.
 	 * @param line Shape of the line.
-	 * @param dataPoints Data points on the line.
-	 * @return Punched shape.
+	 * @return Stroked shape.
 	 */
-	protected Shape punch(Shape line, Iterable<DataPoint> dataPoints) {
+	protected Shape stroke(Shape line) {
 		if (line == null) {
 			return null;
 		}
-		Stroke stroke = getSetting(LineRenderer.STROKE);
-		Shape lineShape = stroke.createStrokedShape(line);
-
-		Number sizeObj = this.<Number>getSetting(GAP);
-		if (!MathUtils.isCalculatable(sizeObj)) {
-			return lineShape;
-		}
-		double size = sizeObj.doubleValue();
-		if (size == 0.0) {
-			return lineShape;
-		}
-
-		boolean rounded = this.<Boolean>getSetting(GAP_ROUNDED);
-
-		// Subtract shapes of data points from the line to yield gaps.
-		Area punched = new Area(lineShape);
-		for (DataPoint p : dataPoints) {
-			punched = GeometryUtils.punch(punched, size, rounded,
-				p.position.getPoint2D(), p.shape);
-		}
-		return punched;
-	}
-
-	/**
-	 * Invoked if a setting has changed.
-	 * @param event Event containing information about the changed setting.
-	 */
-	public void settingChanged(SettingChangeEvent event) {
+		Stroke stroke = getStroke();
+		return stroke.createStrokedShape(line);
 	}
 
 	/**
@@ -113,10 +89,65 @@ public abstract class AbstractLineRenderer2D extends BasicSettingsStorage
 	 */
 	private void readObject(ObjectInputStream in)
 			throws ClassNotFoundException, IOException {
-		// Normal deserialization
+		// Default deserialization
 		in.defaultReadObject();
+		// Custom deserialization
+		stroke = (Stroke) SerializationUtils.unwrap(
+				(Serializable) in.readObject());
+	}
 
-		// Restore listeners
-		addSettingsListener(this);
+	/**
+	 * Custom serialization method.
+	 * @param out Output stream.
+	 * @throws ClassNotFoundException if a serialized class doesn't exist.
+	 * @throws IOException if there is an error while writing data to the
+	 *         output stream.
+	 */
+	private void writeObject(ObjectOutputStream out)
+			throws ClassNotFoundException, IOException {
+		// Default serialization
+		out.defaultWriteObject();
+		// Custom serialization
+		out.writeObject(SerializationUtils.wrap(stroke));
+	}
+
+	@Override
+	public Stroke getStroke() {
+		return stroke;
+	}
+
+	@Override
+	public void setStroke(Stroke stroke) {
+		this.stroke = stroke;
+	}
+
+	@Override
+	public double getGap() {
+		return gap;
+	}
+
+	@Override
+	public void setGap(double gap) {
+		this.gap = gap;
+	}
+
+	@Override
+	public boolean isGapRounded() {
+		return gapRounded;
+	}
+
+	@Override
+	public void setGapRounded(boolean gapRounded) {
+		this.gapRounded = gapRounded;
+	}
+
+	@Override
+	public Paint getColor() {
+		return color;
+	}
+
+	@Override
+	public void setColor(Paint color) {
+		this.color = color;
 	}
 }

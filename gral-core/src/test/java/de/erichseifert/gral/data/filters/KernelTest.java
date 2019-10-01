@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,16 +21,15 @@
  */
 package de.erichseifert.gral.data.filters;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import de.erichseifert.gral.TestUtils;
+import org.junit.Test;
 
 public class KernelTest {
-	private static final double DELTA = 1e-15;
+	private static final double DELTA = TestUtils.DELTA;
 
 	@Test
 	public void testSimpleKernel() {
@@ -39,6 +38,45 @@ public class KernelTest {
 		assertEquals(0.0, k.get(-1), DELTA);
 		assertEquals(1.0, k.get( 0), DELTA);
 		assertEquals(0.0, k.get( 1), DELTA);
+	}
+
+	@Test
+	public void testBinomial() {
+		Kernel kernel;
+
+		// Small kernel
+		kernel = Kernel.getBinomial(2);
+		assertEquals(2, kernel.size());
+		assertEquals(1, kernel.getOffset());
+		assertEquals(0.00, kernel.get(-2), DELTA);
+		assertEquals(0.50, kernel.get(-1), DELTA);
+		assertEquals(0.50, kernel.get( 0), DELTA);
+		assertEquals(0.00, kernel.get( 1), DELTA);
+		assertEquals(0.00, kernel.get( 2), DELTA);
+
+		// Large kernel
+		kernel = Kernel.getBinomial(13);
+		assertEquals(13, kernel.size());
+		assertEquals(6, kernel.getOffset());
+		assertEquals(0.1933593750, kernel.get(-1), DELTA);
+		assertEquals(0.2255859375, kernel.get( 0), DELTA);
+		assertEquals(0.1933593750, kernel.get( 1), DELTA);
+
+		// Kernel with specified variance
+		kernel = Kernel.getBinomial(1.0);
+		assertEquals(5, kernel.size());
+		assertEquals(2, kernel.getOffset());
+	}
+
+	@Test
+	public void testUniform() {
+		Kernel kernel = Kernel.getUniform(13, 0, 1.0);
+		assertEquals(13, kernel.size());
+		assertEquals(0, kernel.getOffset());
+		assertEquals(0.0, kernel.get(-1), DELTA);
+		assertEquals(1.0, kernel.get( 0), DELTA);
+		assertEquals(1.0, kernel.get(12), DELTA);
+		assertEquals(0.0, kernel.get(13), DELTA);
 	}
 
 	@Test

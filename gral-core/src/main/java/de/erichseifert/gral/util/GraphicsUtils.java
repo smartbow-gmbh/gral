@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -109,7 +109,7 @@ public abstract class GraphicsUtils {
 		AttributedCharacterIterator iterator = string.getIterator();
 		LineBreakMeasurer measurer = new LineBreakMeasurer(iterator, frc);
 
-		List<TextLayout> lines = new LinkedList<TextLayout>();
+		List<TextLayout> lines = new LinkedList<>();
 		while (measurer.getPosition() < text.length()) {
 			// Find out which character will be wrapped next
 			int nextBreakPos = measurer.nextOffset(wrappingWidth);
@@ -170,6 +170,9 @@ public abstract class GraphicsUtils {
 		}
 		if (paintBounds == null) {
 			paintBounds = shape.getBounds2D();
+		}
+		if (paintBounds.getWidth() == 0.0 || paintBounds.getHeight() == 0.0) {
+			return;
 		}
 		AffineTransform txOrig = graphics.getTransform();
 		graphics.translate(paintBounds.getX(), paintBounds.getY());

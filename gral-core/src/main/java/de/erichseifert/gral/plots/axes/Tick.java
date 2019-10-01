@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -33,19 +33,23 @@ import de.erichseifert.gral.util.PointND;
  */
 public class Tick extends DataPoint {
 	/** Type of tick mark. */
-	public static enum TickType {
+	public enum TickType {
 		/** Major tick mark. */
 		MAJOR,
 		/** Minor tick mark. */
 		MINOR,
 		/** User-defined tick mark. */
 		CUSTOM
-	};
+	}
 
 	/** The type of tick mark (major/minor/custom). */
 	public final TickType type;
 	/** The normal of the tick mark. */
 	public final PointND<Double> normal;
+	/** Drawable that will be used to render the tick. */
+	public final Drawable drawable;
+	/** Shape describing the tick. */
+	public final Shape shape;
 	/** Label text associated with this tick mark. */
 	public final String label;
 
@@ -61,9 +65,11 @@ public class Tick extends DataPoint {
 	 */
 	public Tick(TickType type, PointND<Double> position, PointND<Double> normal,
 			Drawable drawable, Shape point, String label) {
-		super(null, position, drawable, point);
+		super(null, position);
 		this.type = type;
 		this.normal = normal;
+		this.drawable = drawable;
+		this.shape = point;
 		this.label = label;
 	}
 }

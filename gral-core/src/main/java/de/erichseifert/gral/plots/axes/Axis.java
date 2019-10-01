@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -57,7 +57,7 @@ public class Axis implements Serializable {
 	 * @param autoscaled {@code true} to turn automatic scaling on
 	 */
 	private Axis(boolean autoscaled) {
-		axisListeners = new HashSet<AxisListener>();
+		axisListeners = new HashSet<>();
 		this.autoscaled = autoscaled;
 	}
 
@@ -167,6 +167,20 @@ public class Axis implements Serializable {
 	}
 
 	/**
+	 * Returns the relative position of the specified value on the axis.
+	 * The value is returned in view coordinates.
+	 * @param value Value whose position is to be determined
+	 * @return Position relative to axis range
+	 */
+	public Number getPosition(Number value) {
+		if (value == null) {
+			return null;
+		}
+		return (value.doubleValue() - getMin().doubleValue()) /
+				getRange();
+	}
+
+	/**
 	 * Returns whether the axis range should be determined automatically rather
 	 * than using the axis's minimum and a maximum values.
 	 * @return whether the axis is scaled automatically to fit the current data
@@ -182,9 +196,7 @@ public class Axis implements Serializable {
 	 *                   scaled to fit the current data.
 	 */
 	public void setAutoscaled(boolean autoscaled) {
-		if (this.autoscaled != autoscaled) {
-			this.autoscaled = autoscaled;
-		}
+		this.autoscaled = autoscaled;
 	}
 
 	/**
@@ -209,6 +221,6 @@ public class Axis implements Serializable {
 		in.defaultReadObject();
 
 		// Handle transient fields
-		axisListeners = new HashSet<AxisListener>();
+		axisListeners = new HashSet<>();
 	}
 }

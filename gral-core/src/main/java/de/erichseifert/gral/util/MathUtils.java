@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -248,7 +248,7 @@ public abstract class MathUtils {
 	 * @param a Unsorted array
 	 * @param lower Starting index
 	 * @param upper End index
-	 * @param i Smallness rank of value to search
+	 * @param i Smallness rank of value to search starting at 1
 	 * @return Index of the element that is the <i>i</i>th smallest in array
 	 * <i>a</i>
 	 */
@@ -260,14 +260,14 @@ public abstract class MathUtils {
 		if (lower == upper) {
 			return lower;
 		}
-		int q = randomizedPartition(a, lower, upper);
-		int k = q - lower + 1;
-		if (i == k) {
-			return q;
-		} else if (i < k) {
-			return randomizedSelect(a, lower, q - 1, i);
+		int pivot = randomizedPartition(a, lower, upper);
+		int lowerPartitionElementCount = pivot - lower + 1;
+		if (i == lowerPartitionElementCount) {
+			return pivot;
+		} else if (i < lowerPartitionElementCount) {
+			return randomizedSelect(a, lower, pivot - 1, i);
 		} else {
-			return randomizedSelect(a, q + 1, upper, i - k);
+			return randomizedSelect(a, pivot + 1, upper, i - lowerPartitionElementCount);
 		}
 	}
 
@@ -280,8 +280,7 @@ public abstract class MathUtils {
 	 * @param lower Starting index
 	 * @param upper End index
 	 * @return Pivot point of the partitioned array
-	 * @see Cormen et al. (2001): Introduction to Algorithms. 2nd edition.
-	 * p. 154
+	 * @see "Cormen et al. (2001): Introduction to Algorithms. 2nd Edition, page 154"
 	 */
 	private static <T extends Comparable<T>> int randomizedPartition(
 			List<T> a, int lower, int upper) {
@@ -299,8 +298,7 @@ public abstract class MathUtils {
 	 * @param lower Starting index
 	 * @param upper End index
 	 * @return Pivot point of the partitioned array
-	 * @see Cormen et al. (2001): Introduction to Algorithms. 2nd edition.
-	 * p. 146
+	 * @see "Cormen et al. (2001): Introduction to Algorithms. 2nd Edition, page 146"
 	 */
 	private static <T extends Comparable<T>> int partition(
 			List<T> a, int lower, int upper) {
@@ -333,7 +331,7 @@ public abstract class MathUtils {
 	/**
 	 * <p>Returns the magnitude of the specified number. Example for magnitude
 	 * base 10:</p>
-	 * <table><tbody>
+	 * <table><caption>Examples of number and corresponding magnitude</caption><tbody>
 	 *   <tr><td align="right"> -0.05</td><td align="right"> -0.01</td></tr>
 	 *   <tr><td align="right">  0.05</td><td align="right">  0.01</td></tr>
 	 *   <tr><td align="right">  3.14</td><td align="right">  1.00</td></tr>

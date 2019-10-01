@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -46,7 +46,7 @@ public class IndexedColorMapperTest {
 			if (!MathUtils.isCalculatable(i)) {
 				return null;
 			}
-			int c = i.intValue();
+			int c = i;
 			return new Color(c, c, c);
 		}
 	}

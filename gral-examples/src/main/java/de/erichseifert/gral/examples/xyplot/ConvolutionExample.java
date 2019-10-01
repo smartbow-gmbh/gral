@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -28,19 +28,16 @@ import java.util.Random;
 import de.erichseifert.gral.data.DataSeries;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.data.filters.Convolution;
-import de.erichseifert.gral.data.filters.Filter;
+import de.erichseifert.gral.data.filters.Filter2D;
 import de.erichseifert.gral.data.filters.Kernel;
-import de.erichseifert.gral.data.filters.KernelUtils;
 import de.erichseifert.gral.data.filters.Median;
 import de.erichseifert.gral.examples.ExamplePanel;
-import de.erichseifert.gral.plots.Legend;
-import de.erichseifert.gral.plots.Plot;
+import de.erichseifert.gral.graphics.Insets2D;
+import de.erichseifert.gral.graphics.Orientation;
 import de.erichseifert.gral.plots.XYPlot;
 import de.erichseifert.gral.plots.lines.DefaultLineRenderer2D;
 import de.erichseifert.gral.ui.InteractivePanel;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Insets2D;
-import de.erichseifert.gral.util.Orientation;
 
 /**
  * Example that shows how to use convultion filtering.
@@ -67,24 +64,24 @@ public class ConvolutionExample extends ExamplePanel {
 		final double KERNEL_VARIANCE = 5.0;
 
 		// Create a smoothed data series from a binomial (near-gaussian) convolution filter
-		Kernel kernelLowpass = KernelUtils.getBinomial(KERNEL_VARIANCE).normalize();
-		Filter dataLowpass = new Convolution(data, kernelLowpass, Filter.Mode.REPEAT, 1);
+		Kernel kernelLowpass = Kernel.getBinomial(KERNEL_VARIANCE).normalize();
+		Filter2D dataLowpass = new Convolution(data, kernelLowpass, Filter2D.Mode.REPEAT, 1);
 		DataSeries dsLowpass = new DataSeries("Lowpass", dataLowpass, 0, 1);
 
 		// Create a derived data series from a binomial convolution filter
-		Kernel kernelHighpass = KernelUtils.getBinomial(KERNEL_VARIANCE).normalize().negate().add(new Kernel(1.0));
-		Filter dataHighpass = new Convolution(data, kernelHighpass, Filter.Mode.REPEAT, 1);
+		Kernel kernelHighpass = Kernel.getBinomial(KERNEL_VARIANCE).normalize().negate().add(new Kernel(1.0));
+		Filter2D dataHighpass = new Convolution(data, kernelHighpass, Filter2D.Mode.REPEAT, 1);
 		DataSeries dsHighpass = new DataSeries("Highpass", dataHighpass, 0, 1);
 
 		// Create a new data series that calculates the moving average using a custom convolution kernel
 		int kernelMovingAverageSize = (int)Math.round(4.0*KERNEL_VARIANCE);
-		Kernel kernelMovingAverage = KernelUtils.getUniform(kernelMovingAverageSize, kernelMovingAverageSize - 1, 1.0).normalize();
-		Filter dataMovingAverage = new Convolution(data, kernelMovingAverage, Filter.Mode.OMIT, 1);
+		Kernel kernelMovingAverage = Kernel.getUniform(kernelMovingAverageSize, kernelMovingAverageSize - 1, 1.0).normalize();
+		Filter2D dataMovingAverage = new Convolution(data, kernelMovingAverage, Filter2D.Mode.OMIT, 1);
 		DataSeries dsMovingAverage = new DataSeries("Moving Average", dataMovingAverage, 0, 1);
 
 		// Create a new data series that calculates the moving median
 		int kernelMovingMedianSize = (int)Math.round(4.0*KERNEL_VARIANCE);
-		Filter dataMovingMedian = new Median(data, kernelMovingMedianSize, kernelMovingMedianSize - 1, Filter.Mode.OMIT, 1);
+		Filter2D dataMovingMedian = new Median(data, kernelMovingMedianSize, kernelMovingMedianSize - 1, Filter2D.Mode.OMIT, 1);
 		DataSeries dsMovingMedian = new DataSeries("Moving Median", dataMovingMedian, 0, 1);
 
 		// Create a new xy-plot
@@ -92,11 +89,11 @@ public class ConvolutionExample extends ExamplePanel {
 
 		// Format plot
 		plot.setInsets(new Insets2D.Double(20.0, 40.0, 40.0, 40.0));
-		plot.setSetting(Plot.LEGEND, true);
+		plot.setLegendVisible(true);
 
 		// Format legend
-		plot.getLegend().setSetting(Legend.ORIENTATION, Orientation.HORIZONTAL);
-		plot.getLegend().setSetting(Legend.ALIGNMENT_Y, 1.0);
+		plot.getLegend().setOrientation(Orientation.HORIZONTAL);
+		plot.getLegend().setAlignmentY(1.0);
 
 		// Format data series as lines of different colors
 		formatLine(plot, ds, Color.BLACK);
@@ -110,10 +107,10 @@ public class ConvolutionExample extends ExamplePanel {
 	}
 
 	private static void formatLine(XYPlot plot, DataSeries series, Color color) {
-		plot.setPointRenderer(series, null);
+		plot.setPointRenderers(series, null);
 		DefaultLineRenderer2D line = new DefaultLineRenderer2D();
-		line.setSetting(DefaultLineRenderer2D.COLOR, color);
-		plot.setLineRenderer(series, line);
+		line.setColor(color);
+		plot.setLineRenderers(series, line);
 	}
 
 	@Override

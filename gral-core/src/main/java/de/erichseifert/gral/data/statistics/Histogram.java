@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,115 +21,72 @@
  */
 package de.erichseifert.gral.data.statistics;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.util.Arrays;
+import java.util.Iterator;
 
-import de.erichseifert.gral.data.AbstractDataSource;
-import de.erichseifert.gral.data.DataChangeEvent;
-import de.erichseifert.gral.data.DataListener;
-import de.erichseifert.gral.data.DataSource;
+public class Histogram implements Iterable<Integer> {
+	private Iterable<Comparable<?>> data;
+	private Number[] breaks;
+	private Integer[] bins;
 
-/**
- * Abstract base class for histograms. Derived classes must
- * make sure the {@code getColumnTypes()} method returns a correct array
- * with column types.
- * @see AbstractDataSource#setColumnTypes(Class...)
- */
-public abstract class Histogram extends AbstractDataSource
-		implements DataListener {
-	/** Version id for serialization. */
-	private static final long serialVersionUID = 5031290498142366257L;
+	public Histogram(Iterable<Comparable<?>> data, int binCount) {
+		this(data, getEquidistantBreaks(data, binCount + 1));
+	}
 
-	/** Data source that is used to build the histogram. */
-	private final DataSource data;
-
-	/**
-	 * Initializes a new histograms with a data source.
-	 * @param data Data source to be analyzed.
-	 */
-	@SuppressWarnings("unchecked")
-	public Histogram(DataSource data) {
+	public Histogram(Iterable<Comparable<?>> data, Number... breaks) {
+		if (breaks.length < 2) {
+			throw new IllegalArgumentException("Invalid break count: " + breaks.length +
+					" A histogram requires at least two breaks to form a bucket.");
+		}
 		this.data = data;
-		this.data.addDataListener(this);
+		this.breaks = breaks;
+		int binCount = breaks.length - 1;
+		bins = new Integer[binCount];
+		Arrays.fill(bins, 0);
+
+		computeDistribution();
 	}
 
-	/**
-	 * Recalculates the histogram values.
-	 */
-	protected abstract void rebuildCells();
-
-	/**
-	 * Method that is invoked when data has been added.
-	 * This method is invoked by objects that provide support for
-	 * {@code DataListener}s and should not be called manually.
-	 * @param source Data source that has been changed.
-	 * @param events Optional event object describing the data values that
-	 *        have been added.
-	 */
-	public void dataAdded(DataSource source, DataChangeEvent... events) {
-		dataChanged(source, events);
-		notifyDataAdded(events);
+	private static Number[] getEquidistantBreaks(Iterable<Comparable<?>> data, int breakCount) {
+		Number[] breaks = new Number[breakCount];
+		Statistics statistics = new Statistics(data);
+		double minValue = statistics.get(Statistics.MIN);
+		double maxValue = statistics.get(Statistics.MAX);
+		double range = maxValue - minValue;
+		int binCount = breakCount - 1;
+		double binWidth = range/binCount;
+		for (int breakIndex = 0; breakIndex < breaks.length; breakIndex++) {
+			breaks[breakIndex] = minValue + breakIndex*binWidth;
+		}
+		return breaks;
 	}
 
-	/**
-	 * Method that is invoked when data has been updated.
-	 * This method is invoked by objects that provide support for
-	 * {@code DataListener}s and should not be called manually.
-	 * @param source Data source that has been changed.
-	 * @param events Optional event object describing the data values that
-	 *        have been updated.
-	 */
-	public void dataUpdated(DataSource source, DataChangeEvent... events) {
-		dataChanged(source, events);
-		notifyDataUpdated(events);
+	private void computeDistribution() {
+		for (Comparable<?> value : data) {
+			if (!(value instanceof Number)) {
+				continue;
+			}
+			for (int binIndex = 0; binIndex < bins.length; binIndex++) {
+				double lowerBinLimit = breaks[binIndex].doubleValue();
+				double upperBinLimit = breaks[binIndex + 1].doubleValue();
+				double doubleValue = ((Number) value).doubleValue();
+				if (doubleValue >= lowerBinLimit && doubleValue < upperBinLimit) {
+					bins[binIndex]++;
+				}
+			}
+		}
 	}
 
-	/**
-	 * Method that is invoked when data has been removed.
-	 * This method is invoked by objects that provide support for
-	 * {@code DataListener}s and should not be called manually.
-	 * @param source Data source that has been changed.
-	 * @param events Optional event object describing the data values that
-	 *        have been removed.
-	 */
-	public void dataRemoved(DataSource source, DataChangeEvent... events) {
-		dataChanged(source, events);
-		notifyDataRemoved(events);
+	public int size() {
+		return breaks.length - 1;
 	}
 
-	/**
-	 * Method that is invoked when data has been added, updated, or removed.
-	 * This method is invoked by objects that provide support for
-	 * {@code DataListener}s and should not be called manually.
-	 * @param source Data source that has been changed.
-	 * @param events Optional event object describing the data values that
-	 *        have been changed.
-	 */
-	private void dataChanged(DataSource source, DataChangeEvent... events) {
-		rebuildCells();
+	public int get(int binIndex) {
+		return bins[binIndex];
 	}
 
-	/**
-	 * Returns the data source associated to this histogram.
-	 * @return Data source
-	 */
-	public DataSource getData() {
-		return data;
-	}
-
-	/**
-	 * Custom deserialization method.
-	 * @param in Input stream.
-	 * @throws ClassNotFoundException if a serialized class doesn't exist anymore.
-	 * @throws IOException if there is an error while reading data from the
-	 *         input stream.
-	 */
-	private void readObject(ObjectInputStream in)
-			throws ClassNotFoundException, IOException {
-		// Normal deserialization
-		in.defaultReadObject();
-
-		// Restore listeners
-		data.addDataListener(this);
+	@Override
+	public Iterator<Integer> iterator() {
+		return Arrays.asList(bins).iterator();
 	}
 }

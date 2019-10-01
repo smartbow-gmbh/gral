@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -112,6 +112,11 @@ public abstract class AbstractDrawable implements Drawable, Serializable {
 	 * @return horizontal and vertical extent that wants to be reached
 	 */
 	public Dimension2D getPreferredSize() {
-		return new de.erichseifert.gral.util.Dimension2D.Double();
+		return new de.erichseifert.gral.graphics.Dimension2D.Double();
+	}
+
+	@Override
+	public void setPosition(double x, double y) {
+		bounds.setFrame(x, y, bounds.getWidth(), bounds.getHeight());
 	}
 }

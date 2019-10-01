@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -35,16 +35,15 @@ import de.erichseifert.gral.io.plots.DrawableWriterFactory;
 import de.erichseifert.gral.plots.XYPlot;
 import de.erichseifert.gral.plots.lines.DefaultLineRenderer2D;
 import de.erichseifert.gral.plots.lines.LineRenderer;
-import de.erichseifert.gral.util.Insets2D;
+import de.erichseifert.gral.graphics.Insets2D;
 
 
 public class DrawableWriterTest {
-	private final DataTable data;
 	private final XYPlot plot;
 
 	@SuppressWarnings("unchecked")
 	public DrawableWriterTest() {
-		data = new DataTable(Double.class, Double.class, Double.class, Double.class);
+		DataTable data = new DataTable(Double.class, Double.class, Double.class, Double.class);
 		data.add(1.0, 4.5, 4.3, 4.0);
 		data.add(1.5, 5.5, 5.3, 5.0);
 		data.add(3.0, 3.5, 3.7, 4.0);
@@ -58,16 +57,16 @@ public class DrawableWriterTest {
 		plot.setInsets(new Insets2D.Double(20, 50, 50, 20));
 
 		LineRenderer lr1 = new DefaultLineRenderer2D();
-		lr1.setSetting(LineRenderer.COLOR, Color.RED);
-		plot.setLineRenderer(s1, lr1);
+		lr1.setColor(Color.RED);
+		plot.setLineRenderers(s1, lr1);
 
 		LineRenderer lr2 = new DefaultLineRenderer2D();
-		lr2.setSetting(LineRenderer.COLOR, Color.GREEN);
-		plot.setLineRenderer(s2, lr2);
+		lr2.setColor(Color.GREEN);
+		plot.setLineRenderers(s2, lr2);
 
 		LineRenderer lr3 = new DefaultLineRenderer2D();
-		lr3.setSetting(LineRenderer.COLOR, Color.BLUE);
-		plot.setLineRenderer(s3, lr3);
+		lr3.setColor(Color.BLUE);
+		plot.setLineRenderers(s3, lr3);
 	}
 
 	public void save() {

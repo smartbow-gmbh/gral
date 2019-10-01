@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -32,13 +32,14 @@ import de.erichseifert.gral.data.statistics.StatisticsTests;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 	// Tests for classes
+	AbstractDataSourceTest.class,
 	DataTableTest.class,
-	DataTableConcurrencyTest.class,
 	DataSeriesTest.class,
 	RowSubsetTest.class,
 	EnumeratedDataTest.class,
 	DummyDataTest.class,
 	RowTest.class,
+	RecordTest.class,
 	ColumnTest.class,
 	JdbcDataTest.class,
 	// Tests for sub-packages

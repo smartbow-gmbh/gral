@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -46,7 +46,7 @@ public class Grayscale extends ScaledContinuousColorMapper {
 		if (!MathUtils.isCalculatable(v)) {
 			return null;
 		}
-		double lightness = 100.0*v.doubleValue();
+		double lightness = 100.0*v;
 		double[] rgb = GraphicsUtils.luv2rgb(new double[] {lightness, 0.0, 0.0}, null);
 		return new Color(
 			(float) MathUtils.limit(rgb[0], 0.0, 1.0),

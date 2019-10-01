@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -56,7 +56,7 @@ public class RandomColors extends IndexedColorMapper {
 	 */
 	public RandomColors() {
 		random = new Random();
-		colorCache = new LinkedHashMap<Integer, Color>();
+		colorCache = new LinkedHashMap<>();
 		colorVariance = new float[] {
 			0.00f, 1.00f,  // Hue
 			0.75f, 0.25f,  // Saturation
@@ -80,7 +80,7 @@ public class RandomColors extends IndexedColorMapper {
 	 */
 	@Override
 	public Paint get(int index) {
-		Integer key = Integer.valueOf(index);
+		Integer key = index;
 		if (colorCache.containsKey(key)) {
 			return colorCache.get(key);
 		}
@@ -90,7 +90,7 @@ public class RandomColors extends IndexedColorMapper {
 		//random.setSeed(seed);
 
 		// Generate a new color that is distant enough from previous colors
-		boolean match = false;
+		boolean match;
 		Color r;
 		do {
 			r = getRandomColor();

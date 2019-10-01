@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -38,13 +38,13 @@ import de.erichseifert.gral.graphics.AbstractDrawable;
 import de.erichseifert.gral.graphics.Drawable;
 import de.erichseifert.gral.graphics.DrawableContainer;
 import de.erichseifert.gral.graphics.DrawingContext;
-import de.erichseifert.gral.graphics.OuterEdgeLayout;
-import de.erichseifert.gral.plots.Label;
+import de.erichseifert.gral.graphics.layout.OuterEdgeLayout;
+import de.erichseifert.gral.graphics.Label;
 import de.erichseifert.gral.plots.axes.Axis;
 import de.erichseifert.gral.plots.axes.AxisRenderer;
 import de.erichseifert.gral.plots.colors.ColorMapper;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Location;
+import de.erichseifert.gral.graphics.Location;
 import de.erichseifert.gral.util.MathUtils;
 import de.erichseifert.gral.util.PointND;
 
@@ -55,17 +55,11 @@ public class DefaultPointRenderer2D extends AbstractPointRenderer {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = -895832597380598383L;
 
-	/**
-	 * Returns the graphical representation to be drawn for the specified data
-	 * value.
-	 * @param data Information on axes, renderers, and values.
-	 * @param shape Outline that describes the point's shape.
-	 * @return Component that can be used to draw the point
-	 */
+	@Override
 	public Drawable getPoint(final PointData data, final Shape shape) {
-		Drawable drawable = new AbstractDrawable() {
+		return new AbstractDrawable() {
 			/** Version id for serialization. */
-			private static final long serialVersionUID = 1915778739867091906L;
+			private static final long serialVersionUID1 = 1915778739867091906L;
 
 			public void draw(DrawingContext context) {
 				PointRenderer renderer = DefaultPointRenderer2D.this;
@@ -75,30 +69,21 @@ public class DefaultPointRenderer2D extends AbstractPointRenderer {
 				Row row = data.row;
 				int col = data.col;
 
-				ColorMapper colors = renderer.<ColorMapper>getSetting(COLOR);
-				Paint paint = colors.get(row.getIndex());
+				ColorMapper colors = getColor();
+				Paint paint = colors.get(data.index);
 
 				GraphicsUtils.fillPaintedShape(
 					context.getGraphics(), shape, paint, null);
 
-				if (renderer.<Boolean>getSetting(VALUE_DISPLAYED)) {
-					int colValue = renderer.<Integer>getSetting(VALUE_COLUMN);
-					drawValueLabel(context, shape, row, colValue);
-				}
-
-				if (renderer.<Boolean>getSetting(ERROR_DISPLAYED)) {
-					int colErrorTop =
-						renderer.<Integer>getSetting(ERROR_COLUMN_TOP);
-					int colErrorBottom =
-						renderer.<Integer>getSetting(ERROR_COLUMN_BOTTOM);
+				if (renderer.isErrorVisible()) {
+					int colErrorTop = renderer.getErrorColumnTop();
+					int colErrorBottom = renderer.getErrorColumnBottom();
 					drawErrorBars(context, shape,
-						row, col, colErrorTop, colErrorBottom,
+						row, data.index, col, colErrorTop, colErrorBottom,
 						axisY, axisRendererY);
 				}
 			}
 		};
-
-		return drawable;
 	}
 
 	/**
@@ -106,14 +91,15 @@ public class DefaultPointRenderer2D extends AbstractPointRenderer {
 	 * @param context Environment used for drawing.
 	 * @param point Point shape used to layout the label.
 	 * @param row Data row containing the point.
+	 * @param pointIndex Index number used for coloring.
 	 * @param col Index of the column that will be projected on the axis.
 	 */
 	protected void drawValueLabel(DrawingContext context,
-			Shape point, Row row, int col) {
+			Shape point, Row row, int pointIndex, int col) {
 		Comparable<?> value = row.get(col);
 
 		// Formatting
-		Format format = getSetting(VALUE_FORMAT);
+		Format format = getValueFormat();
 		if ((format == null) && row.isColumnNumeric(col)) {
 			format = NumberFormat.getInstance();
 		}
@@ -122,29 +108,30 @@ public class DefaultPointRenderer2D extends AbstractPointRenderer {
 		String text = (format != null) ? format.format(value) : value.toString();
 
 		// Visual settings
-		ColorMapper colors = getSetting(VALUE_COLOR);
-		Paint paint = colors.get(row.getIndex());
-		Font font = getSetting(VALUE_FONT);
+		ColorMapper colors = getValueColor();
+		Paint paint = colors.get(pointIndex);
+		Font font = getValueFont();
 		double fontSize = font.getSize2D();
 
 		// Layout settings
-		Location location = getSetting(VALUE_LOCATION);
-		Number alignX = this.<Number>getSetting(VALUE_ALIGNMENT_X);
-		Number alignY = this.<Number>getSetting(VALUE_ALIGNMENT_Y);
-		Number rotation = this.<Number>getSetting(VALUE_ROTATION);
-		Number distanceObj = getSetting(VALUE_DISTANCE);
-		double distance = 0.0;
-		if (MathUtils.isCalculatable(distanceObj)) {
-			distance = distanceObj.doubleValue()*fontSize;
+		Location location = getValueLocation();
+		double alignX = getValueAlignmentX();
+		double alignY = getValueAlignmentY();
+		double rotation = getValueRotation();
+		double distance = getValueDistance();
+		if (MathUtils.isCalculatable(distance)) {
+			distance *= fontSize;
+		} else {
+			distance = 0.0;
 		}
 
 		// Create a label with the settings
 		Label label = new Label(text);
-		label.setSetting(Label.ALIGNMENT_X, alignX);
-		label.setSetting(Label.ALIGNMENT_Y, alignY);
-		label.setSetting(Label.ROTATION, rotation);
-		label.setSetting(Label.COLOR, paint);
-		label.setSetting(Label.FONT, font);
+		label.setAlignmentX(alignX);
+		label.setAlignmentY(alignY);
+		label.setRotation(rotation);
+		label.setColor(paint);
+		label.setFont(font);
 
 		Rectangle2D boundsPoint = point.getBounds2D();
 		DrawableContainer labelContainer =
@@ -160,6 +147,7 @@ public class DefaultPointRenderer2D extends AbstractPointRenderer {
 	 * @param context Environment used for drawing.
 	 * @param point Shape of the point.
 	 * @param row Data row containing the point.
+	 * @param rowIndex Index of the row.
 	 * @param col Index of the column that will be projected on the axis.
 	 * @param colErrorTop Index of the column that contains the upper error value.
 	 * @param colErrorBottom Index of the column that contains the lower error value.
@@ -167,7 +155,7 @@ public class DefaultPointRenderer2D extends AbstractPointRenderer {
 	 * @param axisRenderer Axis renderer.
 	 */
 	protected void drawErrorBars(DrawingContext context, Shape point,
-			Row row, int col, int colErrorTop, int colErrorBottom,
+			Row row, int rowIndex, int col, int colErrorTop, int colErrorBottom,
 			Axis axis, AxisRenderer axisRenderer) {
 		if (axisRenderer == null) {
 			return;
@@ -208,14 +196,14 @@ public class DefaultPointRenderer2D extends AbstractPointRenderer {
 
 		// Draw the error bar
 		Line2D errorBar = new Line2D.Double(0.0, posYTop, 0.0, posYBottom);
-		ColorMapper colors = getSetting(ERROR_COLOR);
-		Paint errorPaint = colors.get(row.getIndex());
-		Stroke errorStroke = getSetting(ERROR_STROKE);
+		ColorMapper colors = getErrorColor();
+		Paint errorPaint = colors.get(rowIndex);
+		Stroke errorStroke = getErrorStroke();
 		GraphicsUtils.drawPaintedShape(
 			graphics, errorBar, errorPaint, null, errorStroke);
 
 		// Draw the shapes at the end of the error bars
-		Shape endShape = getSetting(ERROR_SHAPE);
+		Shape endShape = getErrorShape();
 		graphics.translate(0.0, posYTop);
 		Stroke endShapeStroke = new BasicStroke(1f);
 		GraphicsUtils.drawPaintedShape(
@@ -234,7 +222,30 @@ public class DefaultPointRenderer2D extends AbstractPointRenderer {
 	 * @return Outline that describes the point's shape.
 	 */
 	public Shape getPointShape(PointData data) {
-		Shape shape = getSetting(SHAPE);
-		return shape;
+		return getShape();
+	}
+
+	/**
+	 * Returns a graphical representation of the value label to be drawn for
+	 * the specified data value.
+	 * @param data Information on axes, renderers, and values.
+	 * @param shape Outline that describes the bounds for the value label.
+	 * @return Component that can be used to draw the value label.
+	 */
+	public Drawable getValue(final PointData data, final Shape shape) {
+		return new AbstractDrawable() {
+			/** Version id for serialization. */
+			private static final long serialVersionUID1 = -2568531344817590175L;
+
+			public void draw(DrawingContext context) {
+				PointRenderer renderer = DefaultPointRenderer2D.this;
+				Row row = data.row;
+
+				if (renderer.isValueVisible()) {
+					int colValue = renderer.getValueColumn();
+					drawValueLabel(context, shape, row, data.index, colValue);
+				}
+			}
+		};
 	}
 }

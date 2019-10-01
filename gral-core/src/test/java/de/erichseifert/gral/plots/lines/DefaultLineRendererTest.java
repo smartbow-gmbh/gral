@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -23,17 +23,14 @@ package de.erichseifert.gral.plots.lines;
 
 import static de.erichseifert.gral.TestUtils.assertNotEmpty;
 import static de.erichseifert.gral.TestUtils.createTestImage;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,7 +56,7 @@ public class DefaultLineRendererTest {
 		data = new PointData(
 			Arrays.asList(axisX, axisY),
 			Arrays.asList(axisRendererX, axisRendererY),
-			null, 0);
+			null, 0, 0);
 	}
 
 	@Test
@@ -67,8 +64,8 @@ public class DefaultLineRendererTest {
 		// Get line
 		LineRenderer r = new DefaultLineRenderer2D();
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data, new PointND<Double>(0.0, 0.0), null, null),
-			new DataPoint(data, new PointND<Double>(1.0, 1.0), null, null)
+			new DataPoint(data, new PointND<>(0.0, 0.0)),
+			new DataPoint(data, new PointND<>(1.0, 1.0))
 		);
 		Shape shape = r.getLineShape(points);
 		Drawable line = r.getLine(points, shape);
@@ -82,38 +79,23 @@ public class DefaultLineRendererTest {
 	}
 
 	@Test
-	public void testSettings() {
-		// Get
-		LineRenderer r = new DefaultLineRenderer2D();
-		assertEquals(Color.BLACK, r.getSetting(LineRenderer.COLOR));
-		// Set
-		r.setSetting(LineRenderer.COLOR, Color.RED);
-		assertEquals(Color.RED, r.getSetting(LineRenderer.COLOR));
-		// Remove
-		r.removeSetting(LineRenderer.COLOR);
-		assertEquals(Color.BLACK, r.getSetting(LineRenderer.COLOR));
-	}
-
-	@Test
 	public void testGap() {
 		LineRenderer r = new DefaultLineRenderer2D();
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data, new PointND<Double>(0.0, 0.0), null, null),
-			new DataPoint(data, new PointND<Double>(1.0, 1.0), null, null)
+			new DataPoint(data, new PointND<>(0.0, 0.0)),
+			new DataPoint(data, new PointND<>(1.0, 1.0))
 		);
 
-		List<Double> gaps = Arrays.asList(
-			(Double) null, Double.NaN,
-			Double.valueOf(0.0), Double.valueOf(1.0));
+		List<Double> gaps = Arrays.asList(Double.NaN, 0.0, 1.0);
 		List<Boolean> roundeds = Arrays.asList(false, true);
 
 		// Test different gap sizes
 		for (Double gap : gaps) {
-			r.setSetting(LineRenderer.GAP, gap);
+			r.setGap(gap);
 
 			// Draw non-rounded and non rounded gaps
 			for (Boolean rounded : roundeds) {
-				r.setSetting(LineRenderer.GAP_ROUNDED, rounded);
+				r.setGapRounded(rounded);
 
 				Shape shape = r.getLineShape(points);
 				Drawable line = r.getLine(points, shape);
@@ -130,8 +112,7 @@ public class DefaultLineRendererTest {
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
 		LineRenderer original = new DefaultLineRenderer2D();
+		@SuppressWarnings("unused")
 		LineRenderer deserialized = TestUtils.serializeAndDeserialize(original);
-
-		TestUtils.assertSettings(original, deserialized);
     }
 }

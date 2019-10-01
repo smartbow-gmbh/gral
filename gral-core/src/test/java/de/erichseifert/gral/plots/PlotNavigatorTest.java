@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -105,8 +105,8 @@ public class PlotNavigatorTest {
 		// Valid zoom
 		nav.setZoom(2.0);
 		assertEquals(2.0, nav.getZoom(), DELTA);
-		assertEquals(-3.0, axisX.getMin().doubleValue(), DELTA);
-		assertEquals(13.0, axisX.getMax().doubleValue(), DELTA);
+		assertEquals(3.0, axisX.getMin().doubleValue(), DELTA);
+		assertEquals(7.0, axisX.getMax().doubleValue(), DELTA);
 
 		// Negative zoom doesn't get set
 		nav.setZoom(-1.0);
@@ -121,7 +121,7 @@ public class PlotNavigatorTest {
 
 	@Test
 	public void testCenter() {
-		nav.setCenter(new PointND<Double>(0.0, 0.0));
+		nav.setCenter(new PointND<>(0.0, 0.0));
 		assertEquals(-4.0, plot.getAxis(XYPlot.AXIS_X).getMin().doubleValue(), DELTA);
 		assertEquals(4.0, plot.getAxis(XYPlot.AXIS_X).getMax().doubleValue(), DELTA);
 	}
@@ -129,7 +129,7 @@ public class PlotNavigatorTest {
 	@Test
 	public void testReset() {
 		nav.setZoom(2.0);
-		nav.setCenter(new PointND<Double>(6.0, 0.0));
+		nav.setCenter(new PointND<>(6.0, 0.0));
 		nav.reset();
 		assertEquals(1.0, plot.getAxis(XYPlot.AXIS_X).getMin().doubleValue(), DELTA);
 		assertEquals(9.0, plot.getAxis(XYPlot.AXIS_X).getMax().doubleValue(), DELTA);

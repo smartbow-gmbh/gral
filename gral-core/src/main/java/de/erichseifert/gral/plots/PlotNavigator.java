@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -36,20 +36,20 @@ import de.erichseifert.gral.util.MathUtils;
 import de.erichseifert.gral.util.PointND;
 
 /**
- * Abstract base class that can be used to control the zoom and panning of a
+ * <p>Abstract base class that can be used to control the zoom and panning of a
  * plot. The navigator translates the interaction to operations on a defined
- * set axes: Zooming is translated as scaling, panning is done by uniformly
- * changing the minimum and maximum values of the axes.
+ * set of axes: Zooming is translated as scaling, panning is done by uniformly
+ * changing the minimum and maximum values of the axes.</p>
  *
- * Additionally, the actions can also be bound to a certain direction by
+ * <p>Additionally, the actions can also be bound to a certain direction by
  * defining a more restricted set of axes. The methods {@link #getDirection()}
  * and {@link #setDirection(de.erichseifert.gral.navigation.NavigationDirection)}
- * provide a convenient way for setting predefined sets of axes.
+ * provide a convenient way for setting predefined sets of axes.</p>
  */
 public abstract class PlotNavigator extends AbstractNavigator {
 	/** AbstractPlot that will be navigated. */
 	private final Plot plot;
-	/** Mapping of axis name to informations on center and zoom. */
+	/** Mapping of axis name to information on center and zoom. */
 	private final Map<String, NavigationInfo> infos;
 	/** Axes affected by navigation. */
 	private final List<String> axes;
@@ -144,8 +144,8 @@ public abstract class PlotNavigator extends AbstractNavigator {
 	 *        navigator.
 	 */
 	public PlotNavigator(Plot plot, List<String> axesNames) {
-		axes = new LinkedList<String>();
-		infos = new HashMap<String, NavigationInfo>();
+		axes = new LinkedList<>();
+		infos = new HashMap<>();
 
 		this.plot = plot;
 
@@ -190,7 +190,7 @@ public abstract class PlotNavigator extends AbstractNavigator {
 
 			// New axis scale
 			double zoom = info.getZoom();
-			double range = rangeOrig*zoom;
+			double range = rangeOrig/zoom;
 			double center = renderer.worldToView(axis, info.getCenter(), true);
 			Number min = renderer.viewToWorld(axis, center - 0.5*range, true);
 			Number max = renderer.viewToWorld(axis, center + 0.5*range, true);
@@ -251,7 +251,7 @@ public abstract class PlotNavigator extends AbstractNavigator {
 			info.setZoom(zoomNew);
 		}
 		NavigationEvent<Double> event =
-			new NavigationEvent<Double>(this, zoomOld, zoomNew);
+				new NavigationEvent<>(this, zoomOld, zoomNew);
 		fireZoomChanged(event);
 		refresh();
 	}
@@ -273,7 +273,7 @@ public abstract class PlotNavigator extends AbstractNavigator {
 			}
 			axisIndex++;
 		}
-		return new PointND<Double>(centerCoords);
+		return new PointND<>(centerCoords);
 	}
 
 	/**
@@ -300,7 +300,7 @@ public abstract class PlotNavigator extends AbstractNavigator {
 		}
 
 		NavigationEvent<PointND<? extends Number>> event =
-			new NavigationEvent<PointND<? extends Number>>(this, centerOld, center);
+				new NavigationEvent<>(this, centerOld, center);
 		fireCenterChanged(event);
 		refresh();
 	}
@@ -324,8 +324,7 @@ public abstract class PlotNavigator extends AbstractNavigator {
 				AxisRenderer renderer =
 					getPlot().getAxisRenderer(axisName);
 				if (renderer != null) {
-					boolean swapped = renderer.<Boolean>getSetting(
-						AxisRenderer.SHAPE_DIRECTION_SWAPPED);
+					boolean swapped = renderer.isShapeDirectionSwapped();
 					if (swapped) {
 						delta = -delta;
 					}
@@ -343,9 +342,9 @@ public abstract class PlotNavigator extends AbstractNavigator {
 			}
 			axisIndex++;
 		}
-		PointND<? extends Number> centerNew = new PointND<Double>(centerCoords);
+		PointND<? extends Number> centerNew = new PointND<>(centerCoords);
 		NavigationEvent<PointND<? extends Number>> event =
-			new NavigationEvent<PointND<? extends Number>>(this, centerOld, centerNew);
+				new NavigationEvent<>(this, centerOld, centerNew);
 		fireCenterChanged(event);
 		refresh();
 	}
@@ -361,8 +360,8 @@ public abstract class PlotNavigator extends AbstractNavigator {
 			if (axis == null) {
 				continue;
 			}
-			double min = 0.0;
-			double max = 0.0;
+			double min;
+			double max;
 			Number center = 0.0;
 			AxisRenderer renderer = getPlot().getAxisRenderer(axisName);
 			if (renderer != null && axis.isValid()) {
@@ -400,14 +399,14 @@ public abstract class PlotNavigator extends AbstractNavigator {
 			}
 			axisIndex++;
 		}
-		PointND<Double> centerNew = new PointND<Double>(centerCoordsOriginal);
+		PointND<Double> centerNew = new PointND<>(centerCoordsOriginal);
 
 		NavigationEvent<PointND<? extends Number>> panEvent =
-			new NavigationEvent<PointND<? extends Number>>(this, centerOld, centerNew);
+				new NavigationEvent<>(this, centerOld, centerNew);
 		fireCenterChanged(panEvent);
 
 		NavigationEvent<Double> zoomEvent =
-			new NavigationEvent<Double>(this, zoomOld, 1.0);
+				new NavigationEvent<>(this, zoomOld, 1.0);
 		fireZoomChanged(zoomEvent);
 
 		refresh();

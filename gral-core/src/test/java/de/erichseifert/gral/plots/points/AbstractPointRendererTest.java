@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -25,9 +25,10 @@ import static de.erichseifert.gral.TestUtils.assertNotEmpty;
 import static de.erichseifert.gral.TestUtils.createTestImage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.Shape;
@@ -35,6 +36,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.Arrays;
 
 import org.junit.Before;
@@ -51,11 +53,12 @@ import de.erichseifert.gral.plots.axes.Axis;
 import de.erichseifert.gral.plots.axes.AxisRenderer;
 import de.erichseifert.gral.plots.axes.LinearRenderer2D;
 import de.erichseifert.gral.plots.colors.ColorMapper;
-import de.erichseifert.gral.plots.colors.SingleColor;
 import de.erichseifert.gral.util.GraphicsUtils;
 import de.erichseifert.gral.util.PointND;
 
 public class AbstractPointRendererTest {
+	private static final double DELTA = TestUtils.DELTA;
+
 	private static DataTable table;
 	private static Row row;
 	private static Axis axis;
@@ -81,18 +84,18 @@ public class AbstractPointRendererTest {
 		axis = new Axis(0.0, 10.0);
 
 		axisRenderer = new LinearRenderer2D();
-		axisRenderer.setSetting(AxisRenderer.SHAPE,
-			new Line2D.Double(-5.0, 0.0, 5.0, 0.0));
+		axisRenderer.setShape(new Line2D.Double(-5.0, 0.0, 5.0, 0.0));
 
 		data = new PointData(
-			Arrays.asList((Axis) null, axis),
-			Arrays.asList((AxisRenderer) null, axisRenderer),
-			row, 0);
+			Arrays.asList(null, axis),
+			Arrays.asList(null, axisRenderer),
+			row, row.getIndex(), 0);
 	}
 
 	private static final class MockPointRenderer extends AbstractPointRenderer {
 		private static final long serialVersionUID = -3361506388079000948L;
 
+		@Override
 		public Drawable getPoint(final PointData data, final Shape shape) {
 			return new AbstractDrawable() {
 				private static final long serialVersionUID = 8239109584500117586L;
@@ -118,9 +121,8 @@ public class AbstractPointRendererTest {
 						posY = pointValue.get(PointND.Y);
 
 						g.translate(posX, posY);
-						ColorMapper colors =
-							renderer.<ColorMapper>getSetting(PointRenderer.COLOR);
-						Paint paint = colors.get(row.getIndex());
+						ColorMapper colors = renderer.getColor();
+						Paint paint = colors.get(data.index);
 						GraphicsUtils.fillPaintedShape(g, shape, paint, null);
 					}
 
@@ -134,11 +136,32 @@ public class AbstractPointRendererTest {
 		public Shape getPointShape(PointData data) {
 			return new Rectangle2D.Double(-1.3, -1.3, 3.0, 3.0);
 		}
+
+		public Drawable getValue(PointData data, Shape shape) {
+			// TODO
+			return null;
+		}
 	}
 
 	@Before
 	public void setUp() {
 		r = new MockPointRenderer();
+
+		r.setColor(Color.RED);
+
+		r.setValueVisible(true);
+		r.setValueAlignmentX(0.0);
+		r.setValueAlignmentY(0.0);
+		r.setValueRotation(90.0);
+		r.setValueDistance(1.0);
+		r.setValueColor(Color.BLUE);
+		r.setValueFont(Font.decode(null).deriveFont(42f));
+		r.setValueFormat(NumberFormat.getNumberInstance());
+
+		r.setErrorVisible(true);
+		r.setErrorShape(new Line2D.Double(-1.0, 0.0, 1.0, 0.0));
+		r.setErrorColor(Color.BLACK);
+		r.setErrorStroke(new BasicStroke(1.5f));
 	}
 
 	private static void layout(BufferedImage image, AxisRenderer axisRenderer) {
@@ -146,7 +169,7 @@ public class AbstractPointRendererTest {
 			image.getWidth()/2.0, 0.0,
 			image.getWidth()/2.0, image.getHeight()
 		);
-		axisRenderer.setSetting(AxisRenderer.SHAPE, axisShape);
+		axisRenderer.setShape(axisShape);
 	}
 
 	@Test
@@ -166,25 +189,29 @@ public class AbstractPointRendererTest {
 	}
 
 	@Test
-	public void testSettings() {
-		// Get
-		assertTrue(r.getSetting(PointRenderer.COLOR) instanceof ColorMapper);
-		assertEquals(Color.BLACK, r.<ColorMapper>getSetting(PointRenderer.COLOR).get(0));
-		// Set
-		r.setSetting(PointRenderer.COLOR, new SingleColor(Color.RED));
-		assertTrue(r.getSetting(PointRenderer.COLOR) instanceof ColorMapper);
-		assertEquals(Color.RED, r.<ColorMapper>getSetting(PointRenderer.COLOR).get(0));
-		// Remove
-		r.removeSetting(PointRenderer.COLOR);
-		assertTrue(r.getSetting(PointRenderer.COLOR) instanceof ColorMapper);
-		assertEquals(Color.BLACK, r.<ColorMapper>getSetting(PointRenderer.COLOR).get(0));
-	}
-
-	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
 		PointRenderer original = r;
 		PointRenderer deserialized = TestUtils.serializeAndDeserialize(original);
 
-		TestUtils.assertSettings(original, deserialized);
+		assertEquals(original.getShape(), deserialized.getShape());
+		assertEquals(original.getColor(), deserialized.getColor());
+
+		assertEquals(original.isValueVisible(), deserialized.isValueVisible());
+		assertEquals(original.getValueColumn(), deserialized.getValueColumn());
+		assertEquals(original.getValueFormat(), deserialized.getValueFormat());
+		assertEquals(original.getValueLocation(), deserialized.getValueLocation());
+		assertEquals(original.getValueAlignmentX(), deserialized.getValueAlignmentX(), DELTA);
+		assertEquals(original.getValueAlignmentY(), deserialized.getValueAlignmentY(), DELTA);
+		assertEquals(original.getValueRotation(), deserialized.getValueRotation(), DELTA);
+		assertEquals(original.getValueDistance(), deserialized.getValueDistance(), DELTA);
+		assertEquals(original.getValueColor(), deserialized.getValueColor());
+		assertEquals(original.getValueFont(), deserialized.getValueFont());
+
+		assertEquals(original.isErrorVisible(), deserialized.isErrorVisible());
+		assertEquals(original.getErrorColumnTop(), deserialized.getErrorColumnTop());
+		assertEquals(original.getErrorColumnBottom(), deserialized.getErrorColumnBottom());
+		assertEquals(original.getErrorColor(), deserialized.getErrorColor());
+		TestUtils.assertEquals(original.getErrorShape(), deserialized.getErrorShape());
+		assertEquals(original.getErrorStroke(), deserialized.getErrorStroke());
     }
 }

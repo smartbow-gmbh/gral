@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -23,8 +23,9 @@ package de.erichseifert.gral.graphics;
 
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.List;
 
-import de.erichseifert.gral.util.Insets2D;
+import de.erichseifert.gral.graphics.layout.Layout;
 
 
 /**
@@ -90,13 +91,28 @@ public interface Container extends Iterable<Drawable> {
 	void add(Drawable drawable, Object constraints);
 
 	/**
-	 * Returns the component at the specified point. If no component could be
-	 * found {@code null} will be returned.
-	 * @param point Two-dimensional point.
-	 * @return Component at the specified point, or {@code null} if no
-	 *         component could be found.
+	 * Returns whether the specified {@code Drawable} is stored.
+	 * @param drawable Element to be checked.
+	 * @return {@code true} if the element is stored in the {@code Container},
+	 * {@code false} otherwise.
 	 */
-	Drawable getDrawableAt(Point2D point);
+	boolean contains(Drawable drawable);
+
+	/**
+	 * Returns the components at the specified point.
+	 * The first component in the result {@code List} is the most
+	 * specific component, i.e. the component with the deepest nesting level.
+	 * If no component could be found an empty {@code List} will be returned.
+	 * @param point Two-dimensional point.
+	 * @return Components at the specified point, with the deepest nested component first.
+	 */
+	List<Drawable> getDrawablesAt(Point2D point);
+
+	/**
+	 * Returns a list of stored components.
+	 * @return Contained drawables.
+	 */
+	List<Drawable> getDrawables();
 
 	/**
 	 * Return additional information on component

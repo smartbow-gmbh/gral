@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -52,10 +52,10 @@ public abstract class AbstractIOFactory<T> implements IOFactory<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected AbstractIOFactory(String propFileName) throws IOException {
-		entries = new HashMap<String, Class<? extends T>>();
+		entries = new HashMap<>();
 
 		// Retrieve property-files
-		Enumeration<URL> propFiles = null;
+		Enumeration<URL> propFiles;
 		propFiles = getClass().getClassLoader().getResources(propFileName);
 		if (!propFiles.hasMoreElements()) {
 			throw new IOException(MessageFormat.format(
@@ -77,7 +77,7 @@ public abstract class AbstractIOFactory<T> implements IOFactory<T> {
 			for (Map.Entry<Object, Object> prop : props.entrySet()) {
 				String mimeType = (String) prop.getKey();
 				String className = (String) prop.getValue();
-				Class<?> clazz = null;
+				Class<?> clazz;
 				try {
 					clazz = Class.forName(className);
 				} catch (ClassNotFoundException e) {
@@ -107,19 +107,7 @@ public abstract class AbstractIOFactory<T> implements IOFactory<T> {
 					return c;
 				}
 			}
-		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
+		} catch (SecurityException | InvocationTargetException | IllegalAccessException | IllegalArgumentException | NoSuchMethodException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -133,7 +121,7 @@ public abstract class AbstractIOFactory<T> implements IOFactory<T> {
 	 */
 	public List<IOCapabilities> getCapabilities() {
 		List<IOCapabilities> caps =
-			new ArrayList<IOCapabilities>(entries.size());
+				new ArrayList<>(entries.size());
 		for (String mimeType : entries.keySet()) {
 			IOCapabilities capability = getCapabilities(mimeType);
 			if (capability != null) {

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -24,19 +24,19 @@ package de.erichseifert.gral.data.filters;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Arrays;
+import java.util.Iterator;
 
 import de.erichseifert.gral.data.Column;
-import de.erichseifert.gral.data.DataAccessor;
 import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DataTable;
-import de.erichseifert.gral.data.Row;
+import de.erichseifert.gral.data.Record;
 
 /**
- * Filter to change the size of equally spaced data sources. All columns of the
+ * Filter2D to change the size of equally spaced data sources. All columns of the
  * data sources must be numeric, otherwise an {@code IllegalArgumentException}
  * will be thrown. The values of the scaled result are created by averaging.
  */
-public class Resize extends Filter {
+public class Resize extends Filter2D {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = -5601162872352170735L;
 
@@ -121,7 +121,7 @@ public class Resize extends Filter {
 
 			double step = original.getColumnCount() / (double) getColumnCount();
 			for (int rowIndex = 0; rowIndex < data.getRowCount(); rowIndex++) {
-				Row rowData = data.getRow(rowIndex);
+				Record rowData = data.getRecord(rowIndex);
 				for (int colIndex = 0; colIndex < getColumnCount(); colIndex++) {
 					double start = colIndex*step;
 					double end   = (colIndex + 1)*step;
@@ -133,10 +133,11 @@ public class Resize extends Filter {
 		}
 
 		for (int rowIndex = 0; rowIndex < data.getRowCount(); rowIndex++) {
-			Row row = data.getRow(rowIndex);
-			Comparable<?>[] rowData = row.toArray(null);
-			Double[] rowValues = new Double[rowData.length];
-			System.arraycopy(rowData, 0, rowValues, 0, rowValues.length);
+			Record row = data.getRecord(rowIndex);
+			Double[] rowValues = new Double[row.size()];
+			for (int columnIndex = 0; columnIndex < rowValues.length; columnIndex++) {
+				rowValues[columnIndex] = row.get(columnIndex);
+			}
 			add(rowValues);
 		}
 	}
@@ -154,6 +155,13 @@ public class Resize extends Filter {
 		}
 	}
 
+	private static <T> Iterator<T> advance(Iterator<T> iterator, int elementCount) {
+		for (int elementIndex = 0; elementIndex < elementCount; elementIndex++) {
+			iterator.next();
+		}
+		return iterator;
+	}
+
 	/**
 	 * Calculates the arithmetic mean of all values between start and end.
 	 * @param data Values.
@@ -161,15 +169,17 @@ public class Resize extends Filter {
 	 * @param end End index.
 	 * @return Arithmetic mean.
 	 */
-	private static double average(DataAccessor data, double start, double end) {
+	private static double average(Iterable<? extends Comparable<?>> data, double start, double end) {
 		int startFloor = (int) Math.floor(start);
 		int startCeil  = (int) Math.ceil(start);
 		int endFloor = (int) Math.floor(end);
 		int endCeil = (int) Math.ceil(end);
 
 		double sum = 0.0;
+		Iterator<? extends Comparable<?>> dataIterator = data.iterator();
+		advance(dataIterator, startFloor);
 		for (int i = startFloor; i < endCeil; i++) {
-			Number number = (Number) data.get(i);
+			Number number = (Number) dataIterator.next();
 			double val = number.doubleValue();
 			if (i == startFloor && startCeil != start) {
 				sum += (startCeil - start) * val;

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -37,6 +37,8 @@ public class PointData {
 	public final List<Axis> axes;
 	/** Renderers for the axes that will be used to project the point. */
 	public final List<? extends AxisRenderer> axisRenderers;
+	/** The index of the row. */
+	public final int index;
 	/** The data row that will get projected. */
 	public final Row row;
 	/** The index of the column in the row that contains the data value. */
@@ -47,13 +49,15 @@ public class PointData {
 	 * @param axes Axes that are used to project the point.
 	 * @param axisRenderers Renderers for the axes.
 	 * @param row Data row containing that will be projected on the axes.
+	 * @param rowIndex Index of the row.
 	 * @param col Index of the column in the row that contains the data value.
 	 */
 	public PointData(List<Axis> axes, List<? extends AxisRenderer> axisRenderers,
-			Row row, int col) {
+			Row row, int rowIndex, int col) {
 		this.axes = Collections.unmodifiableList(axes);
 		this.axisRenderers = Collections.unmodifiableList(axisRenderers);
 		this.row = row;
+		this.index = rowIndex;
 		this.col = col;
 	}
 }

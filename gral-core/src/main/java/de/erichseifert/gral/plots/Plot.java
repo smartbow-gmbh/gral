@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,16 +21,20 @@
  */
 package de.erichseifert.gral.plots;
 
+import java.awt.Font;
+import java.awt.Paint;
+import java.awt.Stroke;
 import java.util.Collection;
 import java.util.List;
 
 import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.graphics.Container;
 import de.erichseifert.gral.graphics.Drawable;
+import de.erichseifert.gral.graphics.Label;
 import de.erichseifert.gral.plots.axes.Axis;
 import de.erichseifert.gral.plots.axes.AxisRenderer;
-import de.erichseifert.gral.plots.settings.Key;
-import de.erichseifert.gral.plots.settings.SettingsStorage;
+import de.erichseifert.gral.plots.legends.Legend;
+import de.erichseifert.gral.graphics.Location;
 
 /**
  * <p>Interface for classes that display data in a plot.</p>
@@ -42,36 +46,7 @@ import de.erichseifert.gral.plots.settings.SettingsStorage;
  *   <li>Administration of settings</li>
  * </ul>
  */
-public interface Plot extends Drawable, Container, SettingsStorage {
-	/** Key for specifying the {@link String} instance for the title of the
-	plot. */
-	Key TITLE = new Key("plot.title"); //$NON-NLS-1$
-	/** Key for specifying the {@link java.awt.Font} instance that is used to
-	display the title of the plot. */
-	Key TITLE_FONT = new Key("plot.title.font"); //$NON-NLS-1$
-	/** Key for specifying the {@link java.awt.Paint} instance to be used to
-	paint the background of the plot. */
-	Key BACKGROUND = new Key("plot.background"); //$NON-NLS-1$
-	/** Key for specifying the {@link java.awt.Stroke} instance to be used to
-	paint the border of the plot. */
-	Key BORDER = new Key("plot.border"); //$NON-NLS-1$
-	/** Key for specifying the {@link java.awt.Paint} instance to be used to
-	fill the border of the plot. */
-	Key COLOR = new Key("plot.color"); //$NON-NLS-1$
-	/** Key for specifying a {@link Boolean} value to set whether anti-aliasing
-	should used for drawing ({@code true}) or not ({@code false}). */
-	Key ANTIALISING = new Key("plot.antialiasing"); //$NON-NLS-1$
-	/** Key for specifying a {@link Boolean} value to set whether the legend
-	should be shown. */
-	Key LEGEND = new Key("plot.legend"); //$NON-NLS-1$
-	/** Key for specifying a {@link de.erichseifert.gral.util.Location} value for
-	the positioning of the legend. */
-	Key LEGEND_LOCATION = new Key("plot.legend.location"); //$NON-NLS-1$
-	/** Key for specifying a {@link Number} value that defines the spacing
-	between the plot area and the legend. The distance is defined in font
-	height. */
-	Key LEGEND_DISTANCE = new Key("plot.legend.distance"); //$NON-NLS-1$
-
+public interface Plot extends Drawable, Container {
 	/**
 	 * Returns the axis with the specified name.
 	 * @param name Name of the axis.
@@ -237,6 +212,96 @@ public interface Plot extends Drawable, Container, SettingsStorage {
 	 *        {@code false} otherwise.
 	 */
 	void setVisible(DataSource source, boolean visible);
+
+	/**
+	 * Returns the paint which is used to fill the background of the plot.
+	 * @return Paint which is used to fill the background of the plot.
+	 */
+	Paint getBackground();
+
+	/**
+	 * Sets the paint which will be used to fill the background of the plot.
+	 * @param background Paint which will be used to fill the background of the
+	 * plot.
+	 */
+	void setBackground(Paint background);
+
+	/**
+	 * Returns the stroke which is used to paint the border of the plot.
+	 * @return Stroke which is used to paint the border of the plot.
+	 */
+	Stroke getBorderStroke();
+
+	/**
+	 * Sets the stroke which will be used to paint the border of the plot.
+	 * @param border Stroke which will be used to paint the border of the plot.
+	 */
+	void setBorderStroke(Stroke border);
+
+	/**
+	 * Returns the paint which is used to fill the border of the plot.
+	 * @return Paint which is used to fill the border of the plot.
+	 */
+	Paint getBorderColor();
+
+	/**
+	 * Sets the paint which will be used to fill the border of the plot.
+	 * @param color Paint which will be used to fill the border of the plot.
+	 */
+	void setBorderColor(Paint color);
+
+	/**
+	 * Returns the base font used by the plot.
+	 * @return Font used by the plot.
+	 */
+	Font getFont();
+
+	/**
+	 * Sets the base font that will be used by the plot.
+	 * @param font Font that will used by the plot.
+	 */
+	void setFont(Font font);
+
+	/**
+	 * Returns whether the legend is shown.
+	 * @return {@code true} if the legend is shown,
+	 *         {@code false} if the legend is hidden.
+	 */
+	boolean isLegendVisible();
+
+	/**
+	 * Sets whether the legend will be shown.
+	 * @param legendVisible {@code true} if the legend should be shown,
+	 *         {@code false} if the legend should be hidden.
+	 */
+	void setLegendVisible(boolean legendVisible);
+
+	/**
+	 * Returns the current positioning of the legend inside the plot.
+	 * @return Current positioning of the legend inside the plot.
+	 */
+	Location getLegendLocation();
+
+	/**
+	 * Sets the positioning of the legend inside the plot.
+	 * @param location Positioning of the legend inside the plot.
+	 */
+	void setLegendLocation(Location location);
+
+	/**
+	 * Returns the spacing between the plot area and the legend.
+	 * @return Spacing between the plot area and the legend relative to font
+	 * height.
+	 */
+	double getLegendDistance();
+
+	/**
+	 * Sets the spacing between the plot area and the legend.
+	 * The distance is defined in font height.
+	 * @param distance Spacing between the plot area and the legend relative to font
+	 * height.
+	 */
+	void setLegendDistance(double distance);
 
     void unregisterDrawables();
 

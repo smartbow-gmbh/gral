@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -38,13 +38,11 @@ import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.JFileChooser;
@@ -337,11 +335,11 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 		Navigator navigator = navigable.getNavigator();
 		if (times >= 0) {
 			for (int i = 0; i < times; i++) {
-				navigator.zoomOut();
+				navigator.zoomIn();
 			}
 		} else {
 			for (int i = 0; i < -times; i++) {
-				navigator.zoomIn();
+				navigator.zoomOut();
 			}
 		}
 
@@ -373,29 +371,14 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	 */
 	private void export(Drawable component, String mimeType, File file,
 			Rectangle2D documentBounds) {
-		FileOutputStream destination;
-		try {
-			destination = new FileOutputStream(file);
-		} catch (FileNotFoundException ex) {
-			// TODO Auto-generated catch block
-			ex.printStackTrace();
-			return;
-		}
-		DrawableWriter writer = DrawableWriterFactory.getInstance().get(mimeType);
-		try {
+		try (FileOutputStream destination = new FileOutputStream(file)) {
+			DrawableWriter writer = DrawableWriterFactory.getInstance().get(mimeType);
 			writer.write(component, destination,
 				documentBounds.getX(), documentBounds.getY(),
 				documentBounds.getWidth(), documentBounds.getHeight());
-		} catch (IOException ex) {
-			// TODO Auto-generated catch block
-			ex.printStackTrace();
-		} finally {
-			try {
-				destination.close();
-			} catch (IOException ex2) {
-				// TODO Auto-generated catch block
-				ex2.printStackTrace();
-			}
+		} catch (IOException e) {
+			// TODO: Exception handling
+			e.printStackTrace();
 		}
 	}
 
@@ -515,7 +498,7 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 			posPrev = pos;
 
 			if (Math.abs(dx) > MIN_DRAG || Math.abs(dy) > MIN_DRAG) {
-				PointND<Integer> deltas = new PointND<Integer>(dx, dy);
+				PointND<Integer> deltas = new PointND<>(dx, dy);
 				navigator.pan(deltas);
 				panel.repaint();
 			}
@@ -641,18 +624,25 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	}
 
 	/**
-	 * Recursively looks for a plot at the specified point and returns it, or
-	 * {@code null} if no plot could be found at the position.
-	 * @param point
-	 * @return
+	 * Returns a navigable area at the specified point, {@code null} if no
+	 * object could be found. If the specified container isn't navigable, its
+	 * children are recursively checked.
+	 * @param drawable The drawable container to check for navigable children.
+	 * @param point Position that should hit the navigable object.
+	 * @return A navigable object.
 	 */
 	private static Navigable getNavigableAt(Drawable drawable, Point2D point) {
-		if ((drawable instanceof Navigable) && drawable.getBounds().contains(point)) {
-			return (Navigable) drawable;
-		}
+		List<Drawable> componentsToCheck;
 		if (drawable instanceof Container) {
-			Drawable component = ((Container) drawable).getDrawableAt(point);
-			return getNavigableAt(component, point);
+			componentsToCheck = ((Container) drawable).getDrawablesAt(point);
+		} else {
+			componentsToCheck = new ArrayList<>(1);
+			componentsToCheck.add(drawable);
+		}
+		for (Drawable component : componentsToCheck) {
+			if ((component instanceof Navigable) && component.getBounds().contains(point)) {
+				return (Navigable) component;
+			}
 		}
 		return null;
 	}

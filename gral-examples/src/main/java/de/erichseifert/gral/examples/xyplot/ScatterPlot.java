@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -27,9 +27,8 @@ import java.util.Random;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.examples.ExamplePanel;
 import de.erichseifert.gral.plots.XYPlot;
-import de.erichseifert.gral.plots.points.PointRenderer;
 import de.erichseifert.gral.ui.InteractivePanel;
-import de.erichseifert.gral.util.Insets2D;
+import de.erichseifert.gral.graphics.Insets2D;
 
 
 public class ScatterPlot extends ExamplePanel {
@@ -53,11 +52,10 @@ public class ScatterPlot extends ExamplePanel {
 
 		// Format plot
 		plot.setInsets(new Insets2D.Double(20.0, 40.0, 40.0, 40.0));
-		plot.setSetting(XYPlot.TITLE, getDescription());
-		plot.setSetting(XYPlot.ANTIALISING, false);
+		plot.getTitle().setText(getDescription());
 
 		// Format points
-		plot.getPointRenderer(data).setSetting(PointRenderer.COLOR, COLOR1);
+		plot.getPointRenderers(data).get(0).setColor(COLOR1);
 
 		// Add plot to Swing component
 		add(new InteractivePanel(plot), BorderLayout.CENTER);

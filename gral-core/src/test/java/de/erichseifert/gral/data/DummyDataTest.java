@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -36,7 +36,7 @@ public class DummyDataTest {
 
 	@Test
 	public void testCreate() {
-		Comparable<?>[] expected = { Integer.valueOf(42), new Double(1.23), "foobar" };
+		Comparable<?>[] expected = {42, 1.23, "foobar" };
 
 		for (Comparable<?> value : expected) {
 			DummyData integer = new DummyData(2, 3, value);

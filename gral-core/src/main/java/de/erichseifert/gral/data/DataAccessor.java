@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -25,6 +25,8 @@ import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.Locale;
+
+import de.erichseifert.gral.data.statistics.Statistics;
 
 /**
  * Abstract base for reading substructures of a data source, i.e. columns or
@@ -87,17 +89,21 @@ public abstract class DataAccessor
 		if (!(obj instanceof DataAccessor)) {
 			return false;
 		}
-		DataAccessor r = (DataAccessor) obj;
+		DataAccessor accessor = (DataAccessor) obj;
 		int size = size();
-		if (r.size() != size) {
+		if (accessor.size() != size) {
 			return false;
 		}
 		for (int i = 0; i < size; i++) {
-			Comparable<?> otherVal = r.get(i);
-			Comparable<?> thisVal = get(i);
-			if (otherVal != null && !otherVal.equals(thisVal)) {
-				return false;
-			} else if (otherVal == null && thisVal != null) {
+			Comparable<?> foreignValue = accessor.get(i);
+			Comparable<?> thisValue = get(i);
+			if (foreignValue == null) {
+				if (thisValue != null) {
+					return false;
+				}
+				continue;
+			}
+			if (!foreignValue.equals(thisValue)) {
 				return false;
 			}
 		}
@@ -142,7 +148,10 @@ public abstract class DataAccessor
 	 * @param key Requested Statistical information.
 	 * @return Calculated value.
 	 */
-	public abstract double getStatistics(String key);
+	public double getStatistics(String key) {
+		Statistics statistics = new Statistics(this);
+		return statistics.get(key);
+	}
 
     /**
      * Returns an iterator over the elements of this object.
@@ -157,8 +166,7 @@ public abstract class DataAccessor
 			}
 
 			public Comparable<?> next() {
-				Comparable<?> value = get(i++);
-				return value;
+				return get(i++);
 			}
 
 			public void remove() {

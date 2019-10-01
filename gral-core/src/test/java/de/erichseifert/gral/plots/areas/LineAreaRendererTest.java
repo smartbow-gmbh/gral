@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -23,11 +23,9 @@ package de.erichseifert.gral.plots.areas;
 
 import static de.erichseifert.gral.TestUtils.assertNotEmpty;
 import static de.erichseifert.gral.TestUtils.createTestImage;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.image.BufferedImage;
@@ -35,7 +33,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -61,7 +58,7 @@ public class LineAreaRendererTest {
 		data = new PointData(
 			Arrays.asList(axisX, axisY),
 			Arrays.asList(axisRendererX, axisRendererY),
-			null, 0);
+			null, 0, 0);
 	}
 
 	@Test
@@ -69,8 +66,8 @@ public class LineAreaRendererTest {
 		// Get line
 		AreaRenderer r = new LineAreaRenderer2D();
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data, new PointND<Double>(0.0, 0.0), null, null),
-			new DataPoint(data, new PointND<Double>(1.0, 1.0), null, null)
+			new DataPoint(data, new PointND<>(0.0, 0.0)),
+			new DataPoint(data, new PointND<>(1.0, 1.0))
 		);
 		Shape shape = r.getAreaShape(points);
 		Drawable area = r.getArea(points, shape);
@@ -86,7 +83,7 @@ public class LineAreaRendererTest {
 	@Test
 	public void testShapeNoPoints() {
 		AreaRenderer r = new LineAreaRenderer2D();
-		List<DataPoint> points = new LinkedList<DataPoint>();
+		List<DataPoint> points = new LinkedList<>();
 		Shape shape = r.getAreaShape(points);
 		assertNull(shape);
 	}
@@ -105,33 +102,19 @@ public class LineAreaRendererTest {
 		PointData data2 = new PointData(
 			data.axes,
 			Arrays.asList((AxisRenderer) null, null),
-			null, 0);
+			null, 0, 0);
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data2, new PointND<Double>(0.0, 0.0), null, null),
-			new DataPoint(data2, new PointND<Double>(1.0, 1.0), null, null)
+			new DataPoint(data2, new PointND<>(0.0, 0.0)),
+			new DataPoint(data2, new PointND<>(1.0, 1.0))
 		);
 		Shape shape = r.getAreaShape(points);
 		assertNotNull(shape);
 	}
 
 	@Test
-	public void testSettings() {
-		// Get
-		AreaRenderer r = new DefaultAreaRenderer2D();
-		assertEquals(Color.GRAY, r.getSetting(AreaRenderer.COLOR));
-		// Set
-		r.setSetting(AreaRenderer.COLOR, Color.RED);
-		assertEquals(Color.RED, r.getSetting(AreaRenderer.COLOR));
-		// Remove
-		r.removeSetting(AreaRenderer.COLOR);
-		assertEquals(Color.GRAY, r.getSetting(AreaRenderer.COLOR));
-	}
-
-	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
 		AreaRenderer original = new DefaultAreaRenderer2D();
+		@SuppressWarnings("unused")
 		AreaRenderer deserialized = TestUtils.serializeAndDeserialize(original);
-
-		TestUtils.assertSettings(original, deserialized);
     }
 }

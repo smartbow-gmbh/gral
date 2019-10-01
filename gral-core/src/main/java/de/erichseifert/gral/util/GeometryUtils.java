@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -63,7 +63,7 @@ public abstract class GeometryUtils {
 	 * @return Array of lines.
 	 */
 	public static Line2D[] shapeToLines(Shape path, boolean swapped) {
-		Deque<Line2D> lines = new ArrayDeque<Line2D>();
+		Deque<Line2D> lines = new ArrayDeque<>();
 		PathIterator i =
 			new FlatteningPathIterator(path.getPathIterator(null), 0.5);
 
@@ -118,7 +118,7 @@ public abstract class GeometryUtils {
      * no intersections were found
      */
     public static List<Point2D> intersection(final Shape s1, final Shape s2) {
-    	List<Point2D> intersections = new ArrayList<Point2D>(2);
+    	List<Point2D> intersections = new ArrayList<>(2);
     	Line2D[] lines1 = shapeToLines(s1, false);
     	Line2D[] lines2 = shapeToLines(s2, false);
 
@@ -289,7 +289,7 @@ public abstract class GeometryUtils {
 
     	Point2D pointStart = null, pointEnd = null;
 		double[] coords = new double[6];
-		List<PathSegment> segments = new LinkedList<PathSegment>();
+		List<PathSegment> segments = new LinkedList<>();
 		while (!path.isDone()) {
 			int type = path.currentSegment(coords);
 

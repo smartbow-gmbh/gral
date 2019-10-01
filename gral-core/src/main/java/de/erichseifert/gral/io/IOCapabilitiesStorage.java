@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -32,7 +32,7 @@ import java.util.Set;
 public abstract class IOCapabilitiesStorage {
 	/** Set of all registered capabilities. */
 	private static final Set<IOCapabilities> capabilities
-		= new HashSet<IOCapabilities>();
+		= new HashSet<>();
 
 	/**
 	 * Initializes a new storage instance.
@@ -52,7 +52,7 @@ public abstract class IOCapabilitiesStorage {
 	 * Adds the specified capabilities to the Set of supported formats.
 	 * @param capabilities Capabilities to be added.
 	 */
-	protected static final void addCapabilities(IOCapabilities capabilities) {
+	protected static void addCapabilities(IOCapabilities capabilities) {
 		IOCapabilitiesStorage.capabilities.add(capabilities);
 	}
 }

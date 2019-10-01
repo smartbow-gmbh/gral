@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -24,7 +24,6 @@ package de.erichseifert.gral.plots;
 import static de.erichseifert.gral.TestUtils.assertNotEmpty;
 import static de.erichseifert.gral.TestUtils.createTestImage;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.awt.BasicStroke;
@@ -58,7 +57,7 @@ public class PlotAreaTest {
 		protected void drawPlot(DrawingContext context) {
 			isDrawn = true;
 		}
-	};
+	}
 
 	@Before
 	public void setUp() {
@@ -66,21 +65,9 @@ public class PlotAreaTest {
 	}
 
 	@Test
-	public void testSettings() {
-		// Get
-		assertEquals(Color.WHITE, plotArea.getSetting(PlotArea.BACKGROUND));
-		// Set
-		plotArea.setSetting(PlotArea.BACKGROUND, "foobar");
-		assertEquals("foobar", plotArea.<String>getSetting(PlotArea.BACKGROUND));
-		// Remove
-		plotArea.removeSetting(PlotArea.BACKGROUND);
-		assertNotNull(plotArea.getSetting(PlotArea.BACKGROUND));
-	}
-
-	@Test
 	public void testDraw() {
-		plotArea.setSetting(Plot.BACKGROUND, Color.WHITE);
-		plotArea.setSetting(Plot.BORDER, new BasicStroke(1f));
+		plotArea.setBackground(Color.WHITE);
+		plotArea.setBorderStroke(new BasicStroke(1f));
 
 		BufferedImage image = createTestImage();
 		plotArea.setBounds(0.0, 0.0, image.getWidth(), image.getHeight());
@@ -95,6 +82,9 @@ public class PlotAreaTest {
 		MockPlotArea2D original = plotArea;
 		MockPlotArea2D deserialized = TestUtils.serializeAndDeserialize(original);
 
-		TestUtils.assertSettings(original, deserialized);
+		assertEquals(original.getBackground(), deserialized.getBackground());
+		assertEquals(original.getBorderStroke(), deserialized.getBorderStroke());
+		assertEquals(original.getBorderColor(), deserialized.getBorderColor());
+		assertEquals(original.getClippingOffset(), deserialized.getClippingOffset());
     }
 }

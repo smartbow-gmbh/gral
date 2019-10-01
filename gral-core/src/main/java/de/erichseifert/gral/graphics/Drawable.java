@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -64,6 +64,13 @@ public interface Drawable {
 	 * rectangle
 	 */
 	double getY();
+
+	/**
+	 * Sets the position to the specified coordinates.
+	 * @param x Coordinate on the x-axis.
+	 * @param y Coordinate on the y-axis.
+	 */
+	void setPosition(double x, double y);
 
 	/**
 	 * Returns the width of the bounds.

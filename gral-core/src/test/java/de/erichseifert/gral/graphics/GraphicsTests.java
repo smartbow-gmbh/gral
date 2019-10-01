@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -22,18 +22,21 @@
 package de.erichseifert.gral.graphics;
 
 
+import de.erichseifert.gral.graphics.layout.LayoutTests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+	// Tests for subpackages
+	LayoutTests.class,
 	// Tests for classes
 	DrawingContextTest.class,
 	DrawableTest.class,
 	ContainerTest.class,
-	EdgeLayoutTest.class,
-	StackedLayoutTest.class,
-	TableLayoutTest.class
+	LabelTest.class,
+	Dimension2DTest.class,
+	Insets2DTest.class
 })
 public class GraphicsTests {
 }

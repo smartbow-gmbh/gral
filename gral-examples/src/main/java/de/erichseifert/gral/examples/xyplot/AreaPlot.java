@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -38,7 +38,7 @@ import de.erichseifert.gral.plots.points.DefaultPointRenderer2D;
 import de.erichseifert.gral.plots.points.PointRenderer;
 import de.erichseifert.gral.ui.InteractivePanel;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Insets2D;
+import de.erichseifert.gral.graphics.Insets2D;
 
 public class AreaPlot extends ExamplePanel {
 	/** Version id for serialization. */
@@ -72,7 +72,7 @@ public class AreaPlot extends ExamplePanel {
 
 		// Create new xy-plot
 		XYPlot plot = new XYPlot(data1, data2, data3);
-		plot.setSetting(XYPlot.LEGEND, true);
+		plot.setLegendVisible(true);
 		plot.setInsets(new Insets2D.Double(20.0, 40.0, 20.0, 20.0));
 
 		// Format data series
@@ -86,27 +86,27 @@ public class AreaPlot extends ExamplePanel {
 
 	private static void formatFilledArea(XYPlot plot, DataSource data, Color color) {
 		PointRenderer point = new DefaultPointRenderer2D();
-		point.setSetting(PointRenderer.COLOR, color);
-		plot.setPointRenderer(data, point);
+		point.setColor(color);
+		plot.setPointRenderers(data, point);
 		LineRenderer line = new DefaultLineRenderer2D();
-		line.setSetting(LineRenderer.COLOR, color);
-		line.setSetting(LineRenderer.GAP, 3.0);
-		line.setSetting(LineRenderer.GAP_ROUNDED, true);
-		plot.setLineRenderer(data, line);
+		line.setColor(color);
+		line.setGap(3.0);
+		line.setGapRounded(true);
+		plot.setLineRenderers(data, line);
 		AreaRenderer area = new DefaultAreaRenderer2D();
-		area.setSetting(AreaRenderer.COLOR, GraphicsUtils.deriveWithAlpha(color, 64));
-		plot.setAreaRenderer(data, area);
+		area.setColor(GraphicsUtils.deriveWithAlpha(color, 64));
+		plot.setAreaRenderers(data, area);
 	}
 
 	private static void formatLineArea(XYPlot plot, DataSource data, Color color) {
 		PointRenderer point = new DefaultPointRenderer2D();
-		point.setSetting(PointRenderer.COLOR, color);
-		plot.setPointRenderer(data, point);
-		plot.setLineRenderer(data, null);
+		point.setColor(color);
+		plot.setPointRenderers(data, point);
+		plot.setLineRenderers(data, null);
 		AreaRenderer area = new LineAreaRenderer2D();
-		area.setSetting(LineAreaRenderer2D.GAP, 3.0);
-		area.setSetting(LineAreaRenderer2D.COLOR, color);
-		plot.setAreaRenderer(data, area);
+		area.setGap(3.0);
+		area.setColor(color);
+		plot.setAreaRenderers(data, area);
 	}
 
 	@Override

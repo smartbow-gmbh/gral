@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -31,7 +31,6 @@ import de.erichseifert.gral.graphics.AbstractDrawable;
 import de.erichseifert.gral.graphics.Drawable;
 import de.erichseifert.gral.graphics.DrawingContext;
 import de.erichseifert.gral.plots.DataPoint;
-import de.erichseifert.gral.plots.settings.Key;
 import de.erichseifert.gral.util.GraphicsUtils;
 
 
@@ -44,17 +43,16 @@ public class SmoothLineRenderer2D extends AbstractLineRenderer2D {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = -6390029474886495264L;
 
-	/** Key for specifying a {@link Number} value for the smoothness of the
-	line. The value must be in range 0 (sharpest) to 1 (smoothest). */
-	public static final Key SMOOTHNESS =
-		new Key("line.smooth.smoothness"); //$NON-NLS-1$
+	/** Degree of "smoothness", where 0.0 means no smoothing, and 1.0 means
+	 * maximal smoothing. */
+	private Number smoothness;
 
 	/**
 	 * Initializes a new {@code SmoothLineRenderer2D} instance with
 	 * default settings.
 	 */
 	public SmoothLineRenderer2D() {
-		setSettingDefault(SMOOTHNESS, 1.0);
+		smoothness = 1.0;
 	}
 
 	/**
@@ -65,9 +63,9 @@ public class SmoothLineRenderer2D extends AbstractLineRenderer2D {
 	 * @return Representation of the line.
 	 */
 	public Drawable getLine(final List<DataPoint> points, final Shape shape) {
-		Drawable d = new AbstractDrawable() {
+		return new AbstractDrawable() {
 			/** Version id for serialization. */
-			private static final long serialVersionUID = 3641589240264518755L;
+			private static final long serialVersionUID1 = 3641589240264518755L;
 
 			/**
 			 * Draws the {@code Drawable} with the specified drawing context.
@@ -75,13 +73,11 @@ public class SmoothLineRenderer2D extends AbstractLineRenderer2D {
 			 */
 			public void draw(DrawingContext context) {
 				// Draw path
-				Paint paint = SmoothLineRenderer2D.this
-					.getSetting(LineRenderer.COLOR);
+				Paint paint = SmoothLineRenderer2D.this.getColor();
 				GraphicsUtils.fillPaintedShape(
 					context.getGraphics(), shape, paint, null);
 			}
 		};
-		return d;
 	}
 
 	/**
@@ -90,7 +86,7 @@ public class SmoothLineRenderer2D extends AbstractLineRenderer2D {
 	 * @return Geometric shape for this line.
 	 */
 	public Shape getLineShape(List<DataPoint> points) {
-		double smoothness = this.<Number>getSetting(SMOOTHNESS).doubleValue();
+		double smoothness = getSmoothness().doubleValue();
 
 		// Construct shape
 		Path2D shape = new Path2D.Double();
@@ -112,7 +108,7 @@ public class SmoothLineRenderer2D extends AbstractLineRenderer2D {
 		}
 		addCurve(shape, p0, p1, p2, p3, ctrl1, ctrl2, smoothness);
 
-		return punch(shape, points);
+		return stroke(shape);
 	}
 
 	/**
@@ -200,6 +196,24 @@ public class SmoothLineRenderer2D extends AbstractLineRenderer2D {
 			m2.getX() + (c2.getX() - m2.getX()) * smoothness + p2.getX() - m2.getX(),
 			m2.getY() + (c2.getY() - m2.getY()) * smoothness + p2.getY() - m2.getY()
 		);
+	}
+
+	/**
+	 * Returns the smoothness of the line.
+	 * The value must be in range 0 (sharpest) to 1 (smoothest).
+	 * @return Line smoothness.
+	 */
+	public Number getSmoothness() {
+		return smoothness;
+	}
+
+	/**
+	 * Returns the smoothness of the line.
+	 * The value must be in range 0 (sharpest) to 1 (smoothest).
+	 * @param smoothness Line smoothness.
+	 */
+	public void setSmoothness(Number smoothness) {
+		this.smoothness = smoothness;
 	}
 
 }

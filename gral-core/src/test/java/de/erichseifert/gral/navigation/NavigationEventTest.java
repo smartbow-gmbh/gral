@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -37,7 +37,7 @@ public class NavigationEventTest {
 
 	@Before
 	public void setUp() {
-		event = new NavigationEvent<Double>(SOURCE, 1.2, 3.4);
+		event = new NavigationEvent<>(SOURCE, 1.2, 3.4);
 	}
 
 	@Test

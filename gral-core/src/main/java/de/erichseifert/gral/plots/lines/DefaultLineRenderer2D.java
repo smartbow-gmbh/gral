@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -58,9 +58,9 @@ public class DefaultLineRenderer2D extends AbstractLineRenderer2D {
 	 * @return Representation of the line.
 	 */
 	public Drawable getLine(final List<DataPoint> points, final Shape shape) {
-		Drawable d = new AbstractDrawable() {
+		return new AbstractDrawable() {
 			/** Version id for serialization. */
-			private static final long serialVersionUID = 7995515716470892483L;
+			private static final long serialVersionUID1 = 7995515716470892483L;
 
 			/**
 			 * Draws the {@code Drawable} with the specified drawing context.
@@ -68,13 +68,11 @@ public class DefaultLineRenderer2D extends AbstractLineRenderer2D {
 			 */
 			public void draw(DrawingContext context) {
 				// Draw line
-				Paint paint = DefaultLineRenderer2D.this
-					.getSetting(LineRenderer.COLOR);
+				Paint paint = DefaultLineRenderer2D.this.getColor();
 				GraphicsUtils.fillPaintedShape(
 					context.getGraphics(), shape, paint, null);
 			}
 		};
-		return d;
 	}
 
 	/**
@@ -94,6 +92,6 @@ public class DefaultLineRenderer2D extends AbstractLineRenderer2D {
 				shape.lineTo(pos.getX(), pos.getY());
 			}
 		}
-		return punch(shape, points);
+		return stroke(shape);
 	}
 }

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -74,17 +74,17 @@ public class DataSeriesTest {
 		DataSeries series = new DataSeries(table, 2, 1);
 
 		for (int row = 0; row < series.getRowCount(); row++) {
-			Row rowTable = table.getRow(row);
-			Row rowSeries = series.getRow(row);
+			Record rowTable = table.getRecord(row);
+			Record rowSeries = series.getRecord(row);
 			assertEquals(rowTable.get(2), rowSeries.get(0));
 			assertEquals(rowTable.get(1), rowSeries.get(1));
 			assertEquals(2, rowSeries.size());
 		}
 
 		// Invalid (negative) index
-		assertNotNull(series.getRow(-1));
+		assertNotNull(series.getRecord(-1));
 		// Invalid (positive) index
-		assertNotNull(series.getRow(series.getRowCount()));
+		assertNotNull(series.getRecord(series.getRowCount()));
 	}
 
 	@Test
@@ -106,14 +106,6 @@ public class DataSeriesTest {
 	public void testGetColumnCount() {
 		DataSeries series = new DataSeries(table, 2, 1);
 		assertEquals(2, series.getColumnCount());
-	}
-
-	@Test
-	public void testName() {
-		DataSeries series = new DataSeries(table, 2, 1);
-		assertEquals(null, series.getName());
-		series.setName("name");
-		assertEquals("name", series.getName());
 	}
 
 	@Test

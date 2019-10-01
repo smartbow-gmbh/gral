@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -20,10 +20,6 @@
  * along with GRAL.  If not, see <http://www.gnu.org/licenses/>.
  */
 package de.erichseifert.gral.data;
-
-import de.erichseifert.gral.util.Orientation;
-
-
 
 /**
  * <p>Class for easily accessing a row of a data source.</p>
@@ -62,12 +58,6 @@ public class Row extends DataAccessor {
 	@Override
 	public int size() {
 		return getSource().getColumnCount();
-	}
-
-	@Override
-	public double getStatistics(String key) {
-		return getSource().getStatistics()
-			.get(key, Orientation.HORIZONTAL, getIndex());
 	}
 
 	/**

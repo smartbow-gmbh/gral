@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -29,7 +29,8 @@ import java.util.Random;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.examples.ExamplePanel;
 import de.erichseifert.gral.graphics.DrawableContainer;
-import de.erichseifert.gral.graphics.TableLayout;
+import de.erichseifert.gral.graphics.Insets2D;
+import de.erichseifert.gral.graphics.layout.TableLayout;
 import de.erichseifert.gral.plots.XYPlot;
 import de.erichseifert.gral.plots.areas.AreaRenderer;
 import de.erichseifert.gral.plots.areas.DefaultAreaRenderer2D;
@@ -38,7 +39,6 @@ import de.erichseifert.gral.plots.lines.LineRenderer;
 import de.erichseifert.gral.plots.points.PointRenderer;
 import de.erichseifert.gral.ui.InteractivePanel;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Insets2D;
 
 public class StackedPlots extends ExamplePanel {
 	/** Version id for serialization. */
@@ -60,26 +60,26 @@ public class StackedPlots extends ExamplePanel {
 		// Create and format upper plot
 		XYPlot plotUpper = new XYPlot(data);
 		Color colorUpper = COLOR1;
-		plotUpper.setPointRenderer(data, null);
+		plotUpper.setPointRenderers(data, null);
 		LineRenderer lineUpper = new DefaultLineRenderer2D();
-		lineUpper.setSetting(LineRenderer.COLOR, colorUpper);
-		plotUpper.setLineRenderer(data, lineUpper);
+		lineUpper.setColor(colorUpper);
+		plotUpper.setLineRenderers(data, lineUpper);
 		AreaRenderer areaUpper = new DefaultAreaRenderer2D();
-		areaUpper.setSetting(AreaRenderer.COLOR, GraphicsUtils.deriveWithAlpha(colorUpper, 64));
-		plotUpper.setAreaRenderer(data, areaUpper);
+		areaUpper.setColor(GraphicsUtils.deriveWithAlpha(colorUpper, 64));
+		plotUpper.setAreaRenderers(data, areaUpper);
 		plotUpper.setInsets(new Insets2D.Double(20.0, 50.0, 40.0, 20.0));
 
 		// Create and format lower plot
 		XYPlot plotLower = new XYPlot(data);
 		Color colorLower = COLOR1;
-		PointRenderer pointsLower = plotLower.getPointRenderer(data);
-		pointsLower.setSetting(PointRenderer.COLOR, colorLower);
-		pointsLower.setSetting(PointRenderer.SHAPE, new Ellipse2D.Double(-3, -3, 6, 6));
+		PointRenderer pointsLower = plotLower.getPointRenderers(data).get(0);
+		pointsLower.setColor(colorLower);
+		pointsLower.setShape(new Ellipse2D.Double(-3, -3, 6, 6));
 		LineRenderer lineLower = new DefaultLineRenderer2D();
-		lineLower.setSetting(LineRenderer.STROKE, new BasicStroke(2f));
-		lineLower.setSetting(LineRenderer.GAP, 1.0);
-		lineLower.setSetting(LineRenderer.COLOR, colorLower);
-		plotLower.setLineRenderer(data, lineLower);
+		lineLower.setStroke(new BasicStroke(2f));
+		lineLower.setGap(1.0);
+		lineLower.setColor(colorLower);
+		plotLower.setLineRenderers(data, lineLower);
 		plotLower.setInsets(new Insets2D.Double(20.0, 50.0, 40.0, 20.0));
 
 		DrawableContainer plots = new DrawableContainer(new TableLayout(1));

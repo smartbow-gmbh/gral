@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,9 +21,13 @@
  */
 package de.erichseifert.gral.data;
 
-import de.erichseifert.gral.util.Orientation;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
-
+import de.erichseifert.gral.data.statistics.Statistics;
 
 /**
  * <p>Class for accessing a specific column of a data source. The data of the
@@ -37,38 +41,31 @@ import de.erichseifert.gral.util.Orientation;
  *
  * @see DataSource
  */
-public class Column extends DataAccessor {
+public class Column<T extends Comparable<T>> implements Iterable<T>, Serializable {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = 7380420622890027262L;
 
-	/**
-	 * Initializes a new instance with the specified data source and column
-	 * index.
-	 * @param source Data source.
-	 * @param col Column index.
-	 */
-	public Column(DataSource source, int col) {
-		super(source, col);
+	private final Class<T> dataType;
+	private final List<T> data;
+
+	public Column(Class<T> dataType, T... data) {
+		this(dataType, Arrays.asList(data));
 	}
 
-	@Override
-	public Comparable<?> get(int row) {
-		DataSource source = getSource();
-		if (source == null) {
-			return null;
+	public Column(Class<T> dataType, Iterable<T> data) {
+		this.dataType = dataType;
+		this.data = new ArrayList<>();
+		for (T item : data) {
+			this.data.add(item);
 		}
-		return source.get(getIndex(), row);
 	}
 
-	@Override
+	public T get(int row) {
+		return row >= data.size() ? null : data.get(row);
+	}
+
 	public int size() {
-		return getSource().getRowCount();
-	}
-
-	@Override
-	public double getStatistics(String key) {
-		return getSource().getStatistics()
-			.get(key, Orientation.VERTICAL, getIndex());
+		return data.size();
 	}
 
 	/**
@@ -76,6 +73,33 @@ public class Column extends DataAccessor {
 	 * @return {@code true} if this column is numeric, otherwise {@code false}.
 	 */
 	public boolean isNumeric() {
-		return getSource().isColumnNumeric(getIndex());
+		return Number.class.isAssignableFrom(getType());
+	}
+
+	public Class<? extends Comparable<?>> getType() {
+		return dataType;
+	}
+
+	public double getStatistics(String key) {
+		return new Statistics(data).get(key);
+	}
+
+	@Override
+	public int hashCode() {
+		return dataType.hashCode() ^ data.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Column)) {
+			return false;
+		}
+		Column<?> column = (Column<?>) obj;
+		return getType().equals(column.getType()) && data.equals(column.data);
+	}
+
+	@Override
+	public Iterator<T> iterator() {
+		return data.iterator();
 	}
 }

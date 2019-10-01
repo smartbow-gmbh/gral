@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,7 +21,7 @@
  */
 package de.erichseifert.gral.data;
 
-import java.util.Collection;
+import java.util.List;
 
 import de.erichseifert.gral.data.comparators.DataComparator;
 
@@ -52,7 +52,7 @@ public interface MutableDataSource extends DataSource {
 	 * @param values values to be added as a row.
 	 * @return Index of the row that has been added.
 	 */
-	int add(Collection<? extends Comparable<?>> values);
+	int add(List<? extends Comparable<?>> values);
 
 	/**
 	 * Adds the specified row to the data sink. The values are added in the
@@ -95,4 +95,10 @@ public interface MutableDataSource extends DataSource {
 	 * @param comparators Comparators used for sorting.
 	 */
 	void sort(final DataComparator... comparators);
+
+	/**
+	 * Sets the name of this series.
+	 * @param name name to be set
+	 */
+	void setName(String name);
 }

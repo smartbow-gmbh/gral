@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -62,7 +62,7 @@ public class DefaultAreaRenderer2D extends AbstractAreaRenderer {
 			 * @param context Environment used for drawing
 			 */
 			public void draw(DrawingContext context) {
-				Paint paint = DefaultAreaRenderer2D.this.getSetting(COLOR);
+				Paint paint = DefaultAreaRenderer2D.this.getColor();
 				GraphicsUtils.fillPaintedShape(context.getGraphics(),
 					shape, paint, null);
 			}
@@ -116,6 +116,6 @@ public class DefaultAreaRenderer2D extends AbstractAreaRenderer {
 			shape.closePath();
 		}
 
-		return punch(shape, points);
+		return shape;
 	}
 }

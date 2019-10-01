@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -24,20 +24,19 @@ package de.erichseifert.gral.examples.pieplot;
 import java.awt.BorderLayout;
 import java.text.MessageFormat;
 import java.util.Random;
-
 import javax.swing.JSlider;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.examples.ExamplePanel;
+import de.erichseifert.gral.graphics.Insets2D;
 import de.erichseifert.gral.plots.PiePlot;
 import de.erichseifert.gral.plots.PiePlot.PieSliceRenderer;
-import de.erichseifert.gral.plots.Plot;
 import de.erichseifert.gral.plots.colors.LinearGradient;
 import de.erichseifert.gral.ui.InteractivePanel;
-import de.erichseifert.gral.util.Insets2D;
 
 
 public class DynamicPiePlot extends ExamplePanel implements ChangeListener {
@@ -56,21 +55,24 @@ public class DynamicPiePlot extends ExamplePanel implements ChangeListener {
 	public DynamicPiePlot() {
 		// Create initial data
 		data = new DataTable(Integer.class);
+		DataSource pieData = PiePlot.createPieData(data);
 
 		// Create new pie plot
-		plot = new PiePlot(data);
+		plot = new PiePlot(pieData);
 		// Change relative size of pie
-		plot.setSetting(PiePlot.RADIUS, 0.9);
+		plot.setRadius(0.9);
 		// Change the starting angle of the first pie slice
-		plot.setSetting(PiePlot.START, 90.0);
+		plot.setStart(90.0);
 		// Add some margin to the plot area
 		plot.setInsets(new Insets2D.Double(20.0));
 
+		PieSliceRenderer pointRenderer =
+				(PieSliceRenderer) plot.getPointRenderer(pieData);
 		// Change the width of gaps between segments
-		plot.getPointRenderer(data).setSetting(PieSliceRenderer.GAP, 0.2);
+		pointRenderer.setGap(0.2);
 		// Change the colors
 		LinearGradient colors = new LinearGradient(COLOR1, COLOR2);
-		plot.getPointRenderer(data).setSetting(PieSliceRenderer.COLOR, colors);
+		pointRenderer.setColor(colors);
 
 		// Add plot to Swing component
 		InteractivePanel panel = new InteractivePanel(plot);
@@ -114,7 +116,7 @@ public class DynamicPiePlot extends ExamplePanel implements ChangeListener {
 		}
 		if (plot != null) {
 			String title = MessageFormat.format("{0,number,integer} random values", data.getRowCount());
-			plot.setSetting(Plot.TITLE, title);
+			plot.getTitle().setText(title);
 		}
 	}
 

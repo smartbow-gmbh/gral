@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -69,7 +69,7 @@ public abstract class AbstractNavigator implements Navigator {
 	 * the axes with the specified names of the specified plot.
 	 */
 	public AbstractNavigator() {
-		navigationListeners = new HashSet<NavigationListener>();
+		navigationListeners = new HashSet<>();
 		zoomFactor = DEFAULT_ZOOM_FACTOR;
 		zoomMin = DEFAULT_ZOOM_MIN;
 		zoomMax = DEFAULT_ZOOM_MAX;
@@ -99,22 +99,44 @@ public abstract class AbstractNavigator implements Navigator {
 	 * Increases the current zoom level by the specified zoom factor.
 	 */
 	public void zoomIn() {
-		if (!isZoomable()) {
-			return;
-		}
-		double zoom = getZoom();
-		setZoom(zoom*getZoomFactor());
+		zoomInAt(null);
 	}
 
 	/**
 	 * Decreases the current zoom level by the specified zoom factor.
 	 */
 	public void zoomOut() {
+		zoomOutAt(null);
+	}
+
+	@Override
+	public void zoomAt(double zoom, PointND<? extends Number> zoomPoint) {
 		if (!isZoomable()) {
 			return;
 		}
+		boolean pan = isPannable() && zoomPoint != null;
+
+		PointND<? extends Number> center = null;
+		if (pan) {
+			center = getCenter();
+			setCenter(zoomPoint);
+		}
+		setZoom(zoom);
+		if (pan) {
+			setCenter(center);
+		}
+	}
+
+	@Override
+	public void zoomInAt(PointND<? extends Number> zoomPoint) {
 		double zoom = getZoom();
-		setZoom(zoom/getZoomFactor());
+		zoomAt(zoom*getZoomFactor(), zoomPoint);
+	}
+
+	@Override
+	public void zoomOutAt(PointND<? extends Number> zoomPoint) {
+		double zoom = getZoom();
+		zoomAt(zoom/getZoomFactor(), zoomPoint);
 	}
 
 	/**

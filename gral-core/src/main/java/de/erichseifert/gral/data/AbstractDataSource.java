@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -24,6 +24,7 @@ package de.erichseifert.gral.data;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,6 +47,8 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = 9139975565475816812L;
 
+	/** Name of the data source. */
+	private String name;
 	/** Number of columns. */
 	private int columnCount;
 	/** Data types that are allowed in the respective columns. */
@@ -108,14 +111,40 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 		}
 	}
 
+	public AbstractDataSource() {
+		this(null, new Class[0]);
+	}
+
+	/**
+	 * Initializes a new instance with the specified name, number of columns, and
+	 * column types.
+	 * @param name name of the DataSource
+	 * @param types type for each column
+	 */
+	public AbstractDataSource(String name, Class<? extends Comparable<?>>... types) {
+		this.name = name;
+		setColumnTypes(types);
+		dataListeners = new LinkedHashSet<>();
+	}
+
 	/**
 	 * Initializes a new instance with the specified number of columns and
 	 * column types.
 	 * @param types type for each column
 	 */
 	public AbstractDataSource(Class<? extends Comparable<?>>... types) {
-		setColumnTypes(types);
-		dataListeners = new LinkedHashSet<DataListener>();
+		this(null, types);
+	}
+
+	public AbstractDataSource(Column... remainingColumns) {
+		Class<? extends Comparable<?>>[] columnTypes = new Class[remainingColumns.length];
+		for (int columnIndex = 0; columnIndex < remainingColumns.length; columnIndex++) {
+			Column column = remainingColumns[columnIndex];
+			columnTypes[columnIndex] = column.getType();
+		}
+		setColumnTypes(columnTypes);
+
+		dataListeners = new LinkedHashSet<>();
 	}
 
 	/**
@@ -128,6 +157,30 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 			statistics = new Statistics(this);
 		}
 		return statistics;
+	}
+
+	public DataSource getColumnStatistics(String key) {
+		Class[] columnTypes = new Class[getColumnCount()];
+		Arrays.fill(columnTypes, Double.class);
+		DataTable statisticsTable = new DataTable(columnTypes);
+		List<Double> colStatistics = new ArrayList<>(columnTypes.length);
+		for (int colIndex = 0; colIndex < getColumnCount(); colIndex++) {
+			Column col = getColumn(colIndex);
+			colStatistics.add(col.getStatistics(key));
+		}
+		if (!colStatistics.isEmpty()) {
+			statisticsTable.add(colStatistics);
+		}
+		return statisticsTable;
+	}
+
+	public DataSource getRowStatistics(String key) {
+		DataTable statisticsTable = getRowCount() != 0 ? new DataTable(Double.class) : new DataTable();
+		for (int rowIndex = 0; rowIndex < getRowCount(); rowIndex++) {
+			Record row = getRecord(rowIndex);
+			statisticsTable.add(new Statistics(row).get(key));
+		}
+		return statisticsTable;
 	}
 
 	/**
@@ -160,7 +213,7 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 	 * @param events Event objects describing all values that have been added.
 	 */
 	protected void notifyDataAdded(DataChangeEvent... events) {
-		List<DataListener> listeners = new LinkedList<DataListener>(dataListeners);
+		List<DataListener> listeners = new LinkedList<>(dataListeners);
 		for (DataListener dataListener : listeners) {
 			dataListener.dataAdded(this, events);
 		}
@@ -171,7 +224,7 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 	 * @param events Event objects describing all values that have been removed.
 	 */
 	protected void notifyDataRemoved(DataChangeEvent... events) {
-		List<DataListener> listeners = new LinkedList<DataListener>(dataListeners);
+		List<DataListener> listeners = new LinkedList<>(dataListeners);
 		for (DataListener dataListener : listeners) {
 			dataListener.dataRemoved(this, events);
 		}
@@ -182,7 +235,7 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 	 * @param events Event objects describing all values that have changed.
 	 */
 	protected void notifyDataUpdated(DataChangeEvent... events) {
-		List<DataListener> listeners = new LinkedList<DataListener>(dataListeners);
+		List<DataListener> listeners = new LinkedList<>(dataListeners);
 		for (DataListener dataListener : listeners) {
 			dataListener.dataUpdated(this, events);
 		}
@@ -193,8 +246,30 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 	 * @param col index of the column to return
 	 * @return the specified column of the data source
 	 */
-	public Column getColumn(int col) {
-		return new Column(this, col);
+	@Override
+	public Column<?> getColumn(int col) {
+		Class<? extends Comparable<?>> columnType = getColumnTypes()[col];
+		List<Comparable<?>> columnData = new LinkedList<>();
+		for (int rowIndex = 0; rowIndex < getRowCount(); rowIndex++) {
+			Record record = getRecord(rowIndex);
+			columnData.add(record.get(col));
+		}
+		return new Column(columnType, columnData.toArray(new Comparable[0]));
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public Record getRecord(int row) {
+		return new Record(getRow(row).toArray(null));
+	}
+
+	// Allows DataTable to reuse the name property
+	protected void setName(String name) {
+		this.name = name;
 	}
 
 	/**
@@ -211,9 +286,7 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 	 * @return The data types of all column in the data source
 	 */
 	public Class<? extends Comparable<?>>[] getColumnTypes() {
-		Class<? extends Comparable<?>>[] types =
-			Arrays.copyOf(this.types, this.types.length);
-		return types;
+		return Arrays.copyOf(this.types, this.types.length);
 	}
 
 	/**
@@ -261,7 +334,7 @@ public abstract class AbstractDataSource implements DataSource, Serializable {
 		in.defaultReadObject();
 
 		// Handle transient fields
-		dataListeners = new HashSet<DataListener>();
+		dataListeners = new HashSet<>();
 		// Statistics can be omitted. It's created using a lazy getter.
 	}
 }

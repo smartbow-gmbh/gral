@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,6 +21,7 @@
  */
 package de.erichseifert.gral.plots.points;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
@@ -40,6 +41,8 @@ import de.erichseifert.gral.plots.axes.AxisRenderer;
 import de.erichseifert.gral.plots.axes.LinearRenderer2D;
 
 public class LabelPointsRendererTest {
+	private static final double DELTA = TestUtils.DELTA;
+
 	private static DataTable table;
 	private static Row row;
 	private static Axis axis;
@@ -50,17 +53,16 @@ public class LabelPointsRendererTest {
 	@SuppressWarnings("unchecked")
 	public static void setUpBeforeClass() {
 		table = new DataTable(Integer.class, Integer.class, Integer.class);
-		table.add(1, 3, 1);              // 0
-		table.add(2, (Integer) null, 2); // 1
+		table.add(1, 3, 1);    // 0
+		table.add(2, null, 2); // 1
 
 		row = new Row(table, 0);
 
 		axis = new Axis(-1.0, 1.0);
 		axisRenderer = new LinearRenderer2D();
-		axisRenderer.setSetting(AxisRenderer.SHAPE,
-			new Line2D.Double(-5.0, 0.0, 5.0, 0.0));
+		axisRenderer.setShape(new Line2D.Double(-5.0, 0.0, 5.0, 0.0));
 
-		data = new PointData(Arrays.asList(axis), Arrays.asList(axisRenderer), row, 0);
+		data = new PointData(Arrays.asList(axis), Arrays.asList(axisRenderer), row, row.getIndex(), 0);
 	}
 
 	@Test
@@ -72,28 +74,32 @@ public class LabelPointsRendererTest {
 
 	@Test
 	public void testInvalidColumn() {
-		PointRenderer r = new LabelPointRenderer();
-		r.setSetting(LabelPointRenderer.COLUMN, table.getColumnCount());
+		LabelPointRenderer r = new LabelPointRenderer();
+		r.setColumn(table.getColumnCount());
 		Shape path = r.getPointShape(data);
 		assertNull(path);
 	}
 
 	@Test
 	public void testNullLabel() {
-		PointRenderer r = new LabelPointRenderer();
-		r.setSetting(LabelPointRenderer.COLUMN, 1);
+		LabelPointRenderer r = new LabelPointRenderer();
+		r.setColumn(1);
 		Row row2 = new Row(table, 1);
 		assertNull(row2.get(1));
-		PointData data2 = new PointData(data.axes, data.axisRenderers, row2, 0);
+		PointData data2 = new PointData(data.axes, data.axisRenderers, row2, row2.getIndex(), 0);
 		Shape path = r.getPointShape(data2);
 		assertNull(path);
 	}
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		PointRenderer original = new LabelPointRenderer();
-		PointRenderer deserialized = TestUtils.serializeAndDeserialize(original);
+		LabelPointRenderer original = new LabelPointRenderer();
+		LabelPointRenderer deserialized = TestUtils.serializeAndDeserialize(original);
 
-		TestUtils.assertSettings(original, deserialized);
+		assertEquals(original.getColumn(), deserialized.getColumn());
+		assertEquals(original.getFormat(), deserialized.getFormat());
+		assertEquals(original.getFont(), deserialized.getFont());
+		assertEquals(original.getAlignmentX(), deserialized.getAlignmentX(), DELTA);
+		assertEquals(original.getAlignmentY(), deserialized.getAlignmentY(), DELTA);
     }
 }

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -50,7 +50,7 @@ public class RowSubsetTest {
 			return (cell instanceof Number) &&
 				(((Number) cell).doubleValue() % 2.0) == 0.0;
 		}
-	};
+	}
 
 	private DataTable table;
 	private RowSubset data;
@@ -92,10 +92,10 @@ public class RowSubsetTest {
 
 	@Test
 	public void testGetInt() {
-		assertEquals(table.getRow(1), data.getRow(0));
-		assertEquals(table.getRow(3), data.getRow(1));
-		assertEquals(table.getRow(5), data.getRow(2));
-		assertEquals(table.getRow(7), data.getRow(3));
+		assertEquals(table.getRecord(1), data.getRecord(0));
+		assertEquals(table.getRecord(3), data.getRecord(1));
+		assertEquals(table.getRecord(5), data.getRecord(2));
+		assertEquals(table.getRecord(7), data.getRecord(3));
 	}
 
 	@Test

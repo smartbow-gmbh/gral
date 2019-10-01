@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -26,17 +26,16 @@ import java.util.Random;
 import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.data.EnumeratedData;
-import de.erichseifert.gral.data.statistics.Histogram1D;
+import de.erichseifert.gral.data.statistics.Histogram2D;
 import de.erichseifert.gral.data.statistics.Statistics;
 import de.erichseifert.gral.examples.ExamplePanel;
 import de.erichseifert.gral.plots.BarPlot;
-import de.erichseifert.gral.plots.axes.AxisRenderer;
 import de.erichseifert.gral.plots.points.PointRenderer;
 import de.erichseifert.gral.ui.InteractivePanel;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Insets2D;
+import de.erichseifert.gral.graphics.Insets2D;
 import de.erichseifert.gral.util.MathUtils;
-import de.erichseifert.gral.util.Orientation;
+import de.erichseifert.gral.graphics.Orientation;
 
 
 public class HistogramPlot extends ExamplePanel {
@@ -55,7 +54,7 @@ public class HistogramPlot extends ExamplePanel {
 		}
 
 		// Create histogram from data
-		Histogram1D histogram = new Histogram1D(data, Orientation.VERTICAL,
+		Histogram2D histogram = new Histogram2D(data, Orientation.VERTICAL,
 				new Number[] {-4.0, -3.2, -2.4, -1.6, -0.8, 0.0, 0.8, 1.6, 2.4, 3.6, 4.0});
 		// Create a second dimension (x axis) for plotting
 		DataSource histogram2d = new EnumeratedData(histogram, (-4.0 + -3.2)/2.0, 0.8);
@@ -65,26 +64,25 @@ public class HistogramPlot extends ExamplePanel {
 
 		// Format plot
 		plot.setInsets(new Insets2D.Double(20.0, 65.0, 50.0, 40.0));
-		plot.setSetting(BarPlot.TITLE,
+		plot.getTitle().setText(
 				String.format("Distribution of %d random samples", data.getRowCount()));
-		plot.setSetting(BarPlot.BAR_WIDTH, 0.78);
+		plot.setBarWidth(0.78);
 
 		// Format x axis
-		plot.getAxisRenderer(BarPlot.AXIS_X).setSetting(AxisRenderer.TICKS_ALIGNMENT, 0.0);
-		plot.getAxisRenderer(BarPlot.AXIS_X).setSetting(AxisRenderer.TICKS_SPACING, 0.8);
-		plot.getAxisRenderer(BarPlot.AXIS_X).setSetting(AxisRenderer.TICKS_MINOR, false);
+		plot.getAxisRenderer(BarPlot.AXIS_X).setTickAlignment(0.0);
+		plot.getAxisRenderer(BarPlot.AXIS_X).setTickSpacing(0.8);
+		plot.getAxisRenderer(BarPlot.AXIS_X).setMinorTicksVisible(false);
 		// Format y axis
 		plot.getAxis(BarPlot.AXIS_Y).setRange(0.0,
 				MathUtils.ceil(histogram.getStatistics().get(Statistics.MAX)*1.1, 25.0));
-		plot.getAxisRenderer(BarPlot.AXIS_Y).setSetting(AxisRenderer.TICKS_ALIGNMENT, 0.0);
-		plot.getAxisRenderer(BarPlot.AXIS_Y).setSetting(AxisRenderer.TICKS_MINOR, false);
-		plot.getAxisRenderer(BarPlot.AXIS_Y).setSetting(AxisRenderer.INTERSECTION, -4.4);
+		plot.getAxisRenderer(BarPlot.AXIS_Y).setTickAlignment(0.0);
+		plot.getAxisRenderer(BarPlot.AXIS_Y).setMinorTicksVisible(false);
+		plot.getAxisRenderer(BarPlot.AXIS_Y).setIntersection(-4.4);
 
 		// Format bars
-		plot.getPointRenderer(histogram2d).setSetting(PointRenderer.COLOR,
-			GraphicsUtils.deriveWithAlpha(COLOR1, 128));
-		plot.getPointRenderer(histogram2d).setSetting(PointRenderer.VALUE_DISPLAYED,
-			true);
+		PointRenderer barRenderer = plot.getPointRenderers(histogram2d).get(0);
+		barRenderer.setColor(GraphicsUtils.deriveWithAlpha(COLOR1, 128));
+		barRenderer.setValueVisible(true);
 
 		// Add plot to Swing component
 		InteractivePanel panel = new InteractivePanel(plot);
@@ -95,12 +93,12 @@ public class HistogramPlot extends ExamplePanel {
 
 	@Override
 	public String getTitle() {
-		return "Histogram plot";
+		return "AbstractHistogram2D plot";
 	}
 
 	@Override
 	public String getDescription() {
-		return String.format("Histogram of %d samples", SAMPLE_COUNT);
+		return String.format("AbstractHistogram2D of %d samples", SAMPLE_COUNT);
 	}
 
 	public static void main(String[] args) {

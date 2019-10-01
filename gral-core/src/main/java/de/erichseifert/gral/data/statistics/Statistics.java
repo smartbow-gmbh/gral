@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,24 +21,20 @@
  */
 package de.erichseifert.gral.data.statistics;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import de.erichseifert.gral.data.DataChangeEvent;
-import de.erichseifert.gral.data.DataListener;
-import de.erichseifert.gral.data.DataSource;
+import de.erichseifert.gral.util.DataUtils;
 import de.erichseifert.gral.util.MathUtils;
-import de.erichseifert.gral.util.Orientation;
 import de.erichseifert.gral.util.SortedList;
 
 
 /**
  * A class that computes and stores various statistical information
- * on a data source.
+ * for an Iterable of values.
  */
-public class Statistics implements DataListener {
+public class Statistics {
 	/** Key for specifying the total number of elements.
 	This is the zeroth central moment: E((x - µ)^0) */
 	public static final String N = "n"; //$NON-NLS-1$
@@ -89,33 +85,17 @@ public class Statistics implements DataListener {
 	public static final String QUARTILE_3 = "quantile75"; //$NON-NLS-1$
 
 	/** Data values that are used to build statistical aggregates. */
-	private final DataSource data;
+	private final Iterable<? extends Comparable<?>> data;
 	/** Table statistics stored by key. */
 	private final Map<String, Double> statistics;
-	/** Column statistics stored by key. */
-	private final ArrayList<Map<String, Double>> statisticsByCol;
-	/** Row statistics stored by key. */
-	private final ArrayList<Map<String, Double>> statisticsByRow;
 
 	/**
-	 * Initializes a new object with the specified data source.
-	 * @param data Data source to be analyzed.
+	 * Initializes a new object with the specified data values.
+	 * @param data Data to be analyzed.
 	 */
-	public Statistics(DataSource data) {
-		statistics = new HashMap<String, Double>();
-
-		statisticsByCol = new ArrayList<Map<String, Double>>(data.getColumnCount());
-		for (int col = 0; col < data.getColumnCount(); col++) {
-			statisticsByCol.add(new HashMap<String, Double>());
-		}
-
-		statisticsByRow = new ArrayList<Map<String, Double>>(data.getRowCount());
-		for (int row = 0; row < data.getRowCount(); row++) {
-			statisticsByRow.add(new HashMap<String, Double>());
-		}
-
+	public Statistics(Iterable<? extends Comparable<?>> data) {
+		statistics = new HashMap<>();
 		this.data = data;
-		this.data.addDataListener(this);
 	}
 
 	/**
@@ -128,7 +108,7 @@ public class Statistics implements DataListener {
 	 * @param data Data values used to calculate statistics
 	 * @param stats A {@code Map} that should store the new statistics.
 	 */
-	private void createBasicStats(Iterable<Comparable<?>> data, Map<String, Double> stats) {
+	private void createBasicStats(Iterable<? extends Comparable<?>> data, Map<String, Double> stats) {
 		double n = 0.0;
 		double sum = 0.0;
 		double sum2 = 0.0;
@@ -198,11 +178,11 @@ public class Statistics implements DataListener {
 	 * Utility method that calculates quantiles for the given data values and
 	 * stores the results in {@code stats}.
 	 * @param stats {@code Map} for storing results
-	 * @see de.erichseifert.gral.util.MathUtils.quantile(List<Double>,double)
+	 * @see de.erichseifert.gral.util.MathUtils#quantile(java.util.List,double)
 	 */
-	private void createDistributionStats(Iterable<Comparable<?>> data, Map<String, Double> stats) {
+	private void createDistributionStats(Iterable<? extends Comparable<?>> data, Map<String, Double> stats) {
 		// Create sorted list of data
-		List<Double> values = new SortedList<Double>();
+		List<Double> values = new SortedList<>();
 		for (Comparable<?> cell : data) {
 			if (!(cell instanceof Number)) {
 				continue;
@@ -225,131 +205,22 @@ public class Statistics implements DataListener {
 	}
 
 	/**
-	 * Returns the specified information for the whole data source.
+	 * Returns the specified statistics value.
 	 * @param key Requested information.
-	 * @return The value for the specified key as  value, or <i>NaN</i>
+	 * @return The value for the specified key as value, or <i>NaN</i>
 	 *         if the specified statistical value does not exist
 	 */
 	public double get(String key) {
-		return get(data, statistics, key);
-	}
-
-	/**
-	 * Returns the specified information for the offset index in the specified
-	 * direction.
-	 * @param key Requested information.
-	 * @param orientation Direction of the values the statistical is built from.
-	 * @param index Column or row index.
-	 * @return The value for the specified key as  value, or <i>NaN</i>
-	 *         if the specified statistical value does not exist
-	 */
-	public double get(String key, Orientation orientation, int index) {
-		Map<String, Double> stats = null;
-		Iterable<Comparable<?>> statsData = null;
-		if (orientation == Orientation.VERTICAL) {
-			if (index >= statisticsByCol.size()) {
-				statisticsByCol.add(new HashMap<String, Double>());
-			}
-			stats = statisticsByCol.get(index);
-			statsData = data.getColumn(index);
-		} else {
-			if (index >= statisticsByRow.size()) {
-				statisticsByRow.add(new HashMap<String, Double>());
-			}
-			stats = statisticsByRow.get(index);
-			statsData = data.getRow(index);
-		}
-		return get(statsData, stats, key);
-	}
-
-	/**
-	 * Returns the specified information for the specified column or row.
-	 * If the specified statistical value does not exist <i>NaN</i>
-	 * is returned.
-	 * @param data Data values.
-	 * @param stats {@code Map} with statistics.
-	 * @param key Requested information.
-	 * @return The value for the specified key as  value, or <i>NaN</i>
-	 *         if the specified statistical value does not exist
-	 */
-	private double get(Iterable<Comparable<?>> data, Map<String, Double> stats,
-			String key) {
-		if (!stats.containsKey(key)) {
+		if (!statistics.containsKey(key)) {
 			if (MEDIAN.equals(key) || QUARTILE_1.equals(key) ||
 					QUARTILE_2.equals(key) || QUARTILE_3.equals(key)) {
-				createDistributionStats(data, stats);
+				createDistributionStats(data, statistics);
 			} else {
-				createBasicStats(data, stats);
+				createBasicStats(data, statistics);
 			}
 		}
 
-		Double v = stats.get(key);
-		return (v != null) ? v : Double.NaN;
-	}
-
-	/**
-	 * Method that is invoked when data has been added.
-	 * This method is invoked by objects that provide support for
-	 * {@code DataListener}s and should not be called manually.
-	 * @param source Data source that has been changed.
-	 * @param events Optional event object describing the data values that
-	 *        have been added
-	 */
-	public void dataAdded(DataSource source, DataChangeEvent... events) {
-		dataChanged(source, events);
-	}
-
-	/**
-	 * Method that is invoked when data has been updated.
-	 * This method is invoked by objects that provide support for
-	 * {@code DataListener}s and should not be called manually.
-	 * @param source Data source that has been changed.
-	 * @param events Optional event object describing the data values that
-	 *        have been updated.
-	 */
-	public void dataUpdated(DataSource source, DataChangeEvent... events) {
-		dataChanged(source, events);
-	}
-
-	/**
-	 * Method that is invoked when data has been removed.
-	 * This method is invoked by objects that provide support for
-	 * {@code DataListener}s and should not be called manually.
-	 * @param source Data source that has been changed.
-	 * @param events Optional event object describing the data values that
-	 *        have been removed.
-	 */
-	public void dataRemoved(DataSource source, DataChangeEvent... events) {
-		dataChanged(source, events);
-	}
-
-	/**
-	 * Method that is invoked when data has been added, updated, or removed.
-	 * This method is invoked by objects that provide support for
-	 * {@code DataListener}s and should not be called manually.
-	 * @param source Data source that has changed.
-	 * @param events Optional event object describing the data values that
-	 *        have been removed.
-	 */
-	private void dataChanged(DataSource source, DataChangeEvent... events) {
-		for (DataChangeEvent event : events) {
-			// Mark statistics as invalid
-			invalidate(event.getCol(), event.getRow());
-		}
-	}
-
-	/**
-	 * Invalidates statistics information for a certain data cell.
-	 * @param col Column index of the cell.
-	 * @param row Row index of the cell.
-	 */
-	protected void invalidate(int col, int row) {
-		statistics.clear();
-		if (col < statisticsByCol.size()) {
-			statisticsByCol.get(col).clear();
-		}
-		if (row < statisticsByRow.size()) {
-			statisticsByRow.get(row).clear();
-		}
+		Double v = statistics.get(key);
+		return DataUtils.getValueOrDefault(v, Double.NaN);
 	}
 }

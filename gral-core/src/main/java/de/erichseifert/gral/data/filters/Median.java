@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -37,7 +37,7 @@ import de.erichseifert.gral.util.MathUtils;
  *   <li>Setting and getting window size</li>
  * </ul>
  */
-public class Median extends Filter {
+public class Median extends Filter2D {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = -1645928908580026536L;
 
@@ -73,10 +73,10 @@ public class Median extends Filter {
 			return;
 		}
 		List<List<Double>> colWindows =
-			new ArrayList<List<Double>>(getColumnCount());
+				new ArrayList<>(getColumnCount());
 		for (int colIndex = 0; colIndex < getColumnCountFiltered(); colIndex++) {
 			int colIndexOriginal = getIndexOriginal(colIndex);
-			List<Double> window = new ArrayList<Double>(getWindowSize());
+			List<Double> window = new ArrayList<>(getWindowSize());
 			colWindows.add(window);
 			// Pre-fill window
 			for (int rowIndex = getOffset() - getWindowSize(); rowIndex < 0; rowIndex++) {
@@ -112,7 +112,7 @@ public class Median extends Filter {
 		if (w.size() == 1) {
 			return w.get(0);
 		}
-		List<Double> window = new ArrayList<Double>(w.size());
+		List<Double> window = new ArrayList<>(w.size());
 		for (Double v : w) {
 			if (!MathUtils.isCalculatable(v)) {
 				return Double.NaN;

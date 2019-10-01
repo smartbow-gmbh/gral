@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -23,17 +23,21 @@ package de.erichseifert.gral.plots;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Dimension2D;
 import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.Arrays;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.List;
 
-import de.erichseifert.gral.data.AbstractDataSource;
 import de.erichseifert.gral.data.Column;
 import de.erichseifert.gral.data.DataSource;
 import de.erichseifert.gral.data.DataTable;
@@ -44,22 +48,23 @@ import de.erichseifert.gral.graphics.Drawable;
 import de.erichseifert.gral.graphics.DrawingContext;
 import de.erichseifert.gral.plots.axes.Axis;
 import de.erichseifert.gral.plots.axes.AxisRenderer;
-import de.erichseifert.gral.plots.axes.LinearRenderer2D;
 import de.erichseifert.gral.plots.colors.ColorMapper;
 import de.erichseifert.gral.plots.colors.ContinuousColorMapper;
 import de.erichseifert.gral.plots.colors.SingleColor;
+import de.erichseifert.gral.plots.legends.AbstractLegend;
+import de.erichseifert.gral.plots.legends.ValueLegend;
 import de.erichseifert.gral.plots.points.AbstractPointRenderer;
 import de.erichseifert.gral.plots.points.PointData;
 import de.erichseifert.gral.plots.points.PointRenderer;
-import de.erichseifert.gral.plots.settings.Key;
 import de.erichseifert.gral.util.GraphicsUtils;
 import de.erichseifert.gral.util.PointND;
+import de.erichseifert.gral.util.SerializationUtils;
 
 
 /**
  * <p>Class that displays data as a box-and-whisker plot showing summaries of
  * important statistical values. The data source must provide six columns to
- * the {@code BoxPlot}:<p>
+ * the {@code BoxPlot}:</p>
  * <ul>
  *   <li>Box position (for multiple boxes)</li>
  *   <li>Position of the center bar (e.g. median)</li>
@@ -69,7 +74,7 @@ import de.erichseifert.gral.util.PointND;
  *   <li>Position of the top edge of the box (e.g. third quartile)</li>
  *   <li>Length of the upper whisker and position of the top bar
  *   (e.g. maximum)</li>
- * </li>
+ * </ul>
  * <p>The utility method {@link #createBoxData(DataSource)} can be used to
  * obtain common statistics for these properties from the each column of an
  * existing data source.</p>
@@ -96,98 +101,385 @@ public class BoxPlot extends XYPlot {
 		/** Version id for serialization. */
 		private static final long serialVersionUID = 2944482729753981341L;
 
-		/** Key for specifying the {@link Integer} value which specifies the
-		index of the column that is used for the horizontal position of a box. */
-		public static final Key COLUMN_POSITION =
-			new Key("boxplot.position.column"); //$NON-NLS-1$
-		/** Key for specifying the {@link Integer} value which specifies the
-		index of the column that is used for the center bar. */
-		public static final Key COLUMN_BAR_CENTER =
-			new Key("boxplot.bar.center.column"); //$NON-NLS-1$
-		/** Key for specifying the {@link Integer} value which specifies the
-		index of the column that is used for the bottom bar. */
-		public static final Key COLUMN_BAR_BOTTOM =
-			new Key("boxplot.bar.bottom.column"); //$NON-NLS-1$
-		/** Key for specifying the {@link Integer} value which specifies the
-		index of the column that is used for the bottom edge of the box. */
-		public static final Key COLUMN_BOX_BOTTOM =
-			new Key("boxplot.box.bottom.column"); //$NON-NLS-1$
-		/** Key for specifying the {@link Integer} value which specifies the
-		index of the column that is used for the bottom edge of the box. */
-		public static final Key COLUMN_BOX_TOP =
-			new Key("boxplot.box.top.column"); //$NON-NLS-1$
-		/** Key for specifying the {@link Integer} value which specifies the
-		index of the column that is used for the top bar. */
-		public static final Key COLUMN_BAR_TOP =
-			new Key("boxplot.bar.top.column"); //$NON-NLS-1$
-		/** Key for specifying a {@link Number} value for the relative width
-		of the box. */
-		public static final Key BOX_WIDTH =
-			new Key("boxplot.box.width"); //$NON-NLS-1$
-		/** Key for specifying an instance of
-		{@link de.erichseifert.gral.plots.colors.ColorMapper} that will be used
-		to paint the background of the box. */
-		public static final Key BOX_BACKGROUND =
-			new Key("boxplot.box.background"); //$NON-NLS-1$
-		/** Key for specifying the {@link java.awt.Paint} instance to be used
-		to paint the border of the box and the lines of bars. */
-		public static final Key BOX_COLOR =
-			new Key("boxplot.box.color"); //$NON-NLS-1$
-		/** Key for specifying the {@link java.awt.Stroke} instance to be used
-		to paint the border of the box and the lines of the bars. */
-		public static final Key BOX_BORDER =
-			new Key("boxplot.box.border"); //$NON-NLS-1$
-		/** Key for specifying the {@link java.awt.Paint} instance to be used
-		to paint the lines of the whiskers. */
-		public static final Key WHISKER_COLOR =
-			new Key("boxplot.whisker.color"); //$NON-NLS-1$
-		/** Key for specifying the {@link java.awt.Stroke} instance to be used
-		to paint the lines of the whiskers. */
-		public static final Key WHISKER_STROKE =
-			new Key("boxplot.whisker.stroke"); //$NON-NLS-1$
-		/** Key for specifying a {@link Number} value for the relative width of
-		the bottom and top bars. */
-		public static final Key BAR_WIDTH =
-			new Key("boxplot.bar.width"); //$NON-NLS-1$
-		/** Key for specifying the {@link java.awt.Paint} instance to be used
-		to paint the lines of the center bar. */
-		public static final Key BAR_CENTER_COLOR =
-			new Key("boxplot.bar.center.color"); //$NON-NLS-1$
-		/** Key for specifying the {@link java.awt.Stroke} instance to be used
-		to paint the lines of the center bar. */
-		public static final Key BAR_CENTER_STROKE =
-			new Key("boxplot.bar.center.stroke"); //$NON-NLS-1$
+		/** Index of the column for the horizontal position of a box. */
+		private int positionColumn;
+		/** Index of the column for the vertical center bar. */
+		private int centerBarColumn;
+		/** Index of the column for the lower vertical bar. */
+		private int bottomBarColumn;
+		/** Index of the column for the lower end of the box. */
+		private int boxBottomColumn;
+		/** Index of the column for the upper end of the box. */
+		private int boxTopColumn;
+		/** Index of the column for the upper vertical bar. */
+		private int topBarColumn;
+
+		/** Relative width of each box. 1.0 means boxes touch each other. */
+		private double boxWidth;
+		/** Color mapping to fill the background of the boxes. */
+		private ColorMapper boxBackground;
+		/** Paint to fill the border of the boxes. */
+		private Paint boxBorderColor;
+		/** Stroke to draw the border of the boxes. */
+		private transient Stroke boxBorderStroke;
+
+		/** Paint to fill the border of the whiskers. */
+		private Paint whiskerColor;
+		/** Stroke to draw the border of the whiskers. */
+		private transient Stroke whiskerStroke;
+
+		/** Relative width of the vertical bars. */
+		private double barWidth;
+		/** Paint to fill the center bar. */
+		private Paint centerBarColor;
+		/** Stroke to draw the center bar. */
+		private transient Stroke centerBarStroke;
 
 		/**
 		 * Constructor that creates a new instance and initializes it with a
 		 * plot as data provider.
 		 */
 		public BoxWhiskerRenderer() {
-			setSettingDefault(COLUMN_POSITION, 0);
-			setSettingDefault(COLUMN_BAR_CENTER, 1);
-			setSettingDefault(COLUMN_BAR_BOTTOM, 2);
-			setSettingDefault(COLUMN_BOX_BOTTOM, 3);
-			setSettingDefault(COLUMN_BOX_TOP, 4);
-			setSettingDefault(COLUMN_BAR_TOP, 5);
-			setSettingDefault(BOX_WIDTH, 0.75);
-			setSettingDefault(BOX_BACKGROUND, Color.WHITE);
-			setSettingDefault(BOX_COLOR, Color.BLACK);
-			setSettingDefault(BOX_BORDER, new BasicStroke(1f));
-			setSettingDefault(WHISKER_COLOR, Color.BLACK);
-			setSettingDefault(WHISKER_STROKE, new BasicStroke(1f));
-			setSettingDefault(BAR_WIDTH, 0.75);
-			setSettingDefault(BAR_CENTER_COLOR, Color.BLACK);
-			setSettingDefault(BAR_CENTER_STROKE, new BasicStroke(
-				2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
+			positionColumn = 0;
+			centerBarColumn = 1;
+			bottomBarColumn = 2;
+			boxBottomColumn = 3;
+			boxTopColumn = 4;
+			topBarColumn = 5;
+			boxWidth = 0.75;
+			boxBackground = new SingleColor(Color.WHITE);
+			boxBorderColor = Color.BLACK;
+			boxBorderStroke = new BasicStroke(1f);
+			whiskerColor = Color.BLACK;
+			whiskerStroke = new BasicStroke(1f);
+			barWidth = 0.75;
+			centerBarColor = Color.BLACK;
+			centerBarStroke = new BasicStroke(
+				2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER);
 		}
 
 		/**
-		 * Returns the graphical representation to be drawn for the specified
-		 * data value.
-		 * @param data Information on axes, renderers, and values.
-		 * @param shape Outline that describes the point's shape.
-		 * @return Component that can be used to draw the point
+		 * Custom deserialization method.
+		 * @param in Input stream.
+		 * @throws ClassNotFoundException if a serialized class doesn't exist anymore.
+		 * @throws IOException if there is an error while reading data from the
+		 *         input stream.
 		 */
+		private void readObject(ObjectInputStream in)
+				throws ClassNotFoundException, IOException {
+			// Default deserialization
+			in.defaultReadObject();
+			// Custom deserialization
+			boxBorderStroke = (Stroke) SerializationUtils.unwrap(
+					(Serializable) in.readObject());
+			whiskerStroke = (Stroke) SerializationUtils.unwrap(
+					(Serializable) in.readObject());
+			centerBarStroke = (Stroke) SerializationUtils.unwrap(
+					(Serializable) in.readObject());
+		}
+
+		/**
+		 * Custom serialization method.
+		 * @param out Output stream.
+		 * @throws ClassNotFoundException if a serialized class doesn't exist anymore.
+		 * @throws IOException if there is an error while writing data to the
+		 *         output stream.
+		 */
+		private void writeObject(ObjectOutputStream out)
+				throws ClassNotFoundException, IOException {
+			// Default serialization
+			out.defaultWriteObject();
+			// Custom serialization
+			out.writeObject(SerializationUtils.wrap(boxBorderStroke));
+			out.writeObject(SerializationUtils.wrap(whiskerStroke));
+			out.writeObject(SerializationUtils.wrap(centerBarStroke));
+		}
+
+		/**
+		 * Returns the index of the column which is used for the horizontal
+		 * position of a box.
+		 * @return Index of the column that is used for the horizontal position
+		 * of a box.
+		 */
+		public int getPositionColumn() {
+			return positionColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the horizontal
+		 * position of a box.
+		 * @param columnIndex Index of the column that is used for the
+		 * horizontal position of a box.
+		 */
+		public void setPositionColumn(int columnIndex) {
+			this.positionColumn = columnIndex;
+		}
+
+		/**
+		 * Returns the index of the column which is used for the center bar.
+		 * @return Index of the column which is used for the center bar.
+		 */
+		public int getCenterBarColumn() {
+			return centerBarColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the center bar.
+		 * @param columnIndex Index of the column which will be used for
+		 * the center bar.
+		 */
+		public void setCenterBarColumn(int columnIndex) {
+			this.centerBarColumn = columnIndex;
+		}
+
+		/**
+		 * Returns the index of the column which is used for the bottom bar.
+		 * @return Index of the column which is used for the bottom bar.
+		 */
+		public int getBottomBarColumn() {
+			return bottomBarColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the bottom bar.
+		 * @param columnIndex Index of the column which will be used for
+		 * the bottom bar.
+		 */
+		public void setBottomBarColumn(int columnIndex) {
+			this.bottomBarColumn = columnIndex;
+		}
+
+		/**
+		 * Returns the index of the column which is used for the bottom edge of
+		 * the box.
+		 * @return Index of the column which is used for the bottom edge of the
+		 * box.
+		 */
+		public int getBoxBottomColumn() {
+			return boxBottomColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the bottom edge
+		 * of the box.
+		 * @param columnIndex Index of the column which will be used for
+		 * the bottom edge of the box.
+		 */
+		public void setColumnBoxBottom(int columnIndex) {
+			this.boxBottomColumn = columnIndex;
+		}
+
+		/**
+		 * Returns the index of the column which is used for the top edge of
+		 * the box.
+		 * @return Index of the column which is used for the top edge of the
+		 * box.
+		 */
+		public int getBoxTopColumn() {
+			return boxTopColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the top edge of
+		 * the box.
+		 * @param columnIndex Index of the column which will be used for the
+		 * top edge of the box.
+		 */
+		public void setBoxTopColumn(int columnIndex) {
+			this.boxTopColumn = columnIndex;
+		}
+
+		/**
+		 * Returns the index of the column which is used for the top bar.
+		 * @return Index of the column which is used for the top bar.
+		 */
+		public int getTopBarColumn() {
+			return topBarColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the top bar.
+		 * @param columnIndex Index of the column which will be used for the
+		 * top bar.
+		 */
+		public void setTopBarColumn(int columnIndex) {
+			this.topBarColumn = columnIndex;
+		}
+
+		/**
+		 * Returns the relative width of the box.
+		 * @return Relative width of the box.
+		 */
+		public double getBoxWidth() {
+			return boxWidth;
+		}
+
+		/**
+		 * Sets the relative width of the box.
+		 * @param boxWidth Relative width of the box.
+		 */
+		public void setBoxWidth(double boxWidth) {
+			this.boxWidth = boxWidth;
+		}
+
+		/**
+		 * Returns the mapping which is used to fill the background of a box.
+		 * @return {@code ColorMapper} instance which is used to fill the
+		 * background of a box.
+		 */
+		public ColorMapper getBoxBackground() {
+			return boxBackground;
+		}
+
+		/**
+		 * Sets the mapping which will be used to fill the background of a box.
+		 * @param color {@code ColorMapper} instance which will be used to fill
+		 * the background of a box.
+		 */
+		public void setBoxBackground(ColorMapper color) {
+			this.boxBackground = color;
+		}
+
+		/**
+		 * Sets the paint which will be used to fill the background of a box.
+		 * @param color {@code Paint} instance which will be used to fill the
+		 * background of a box.
+		 */
+		public void setBoxBackground(Paint color) {
+			setBoxBackground(new SingleColor(color));
+		}
+
+		/**
+		 * Returns the paint which is used to fill the border of a box and the
+		 * lines of bars.
+		 * @return Paint which is used to fill the border of a box and the
+		 * lines of bars.
+		 */
+		public Paint getBoxBorderColor() {
+			return boxBorderColor;
+		}
+
+		/**
+		 * Sets the paint which will be used to fill the border of a box and
+		 * the lines of bars.
+		 * @param color Paint which will be used to fill the border of a box
+		 * and the lines of bars.
+		 */
+		public void setBoxBorderColor(Paint color) {
+			this.boxBorderColor = color;
+		}
+
+		/**
+		 * Returns the stroke which is used to paint the border of a box and
+		 * the lines of the bars.
+		 * @return {@code Stroke} instance which is used to paint the border of
+		 * a box and the lines of the bars.
+		 */
+		public Stroke getBoxBorderStroke() {
+			return boxBorderStroke;
+		}
+
+		/**
+		 * Sets the stroke which will be used to paint the border of a box and
+		 * the lines of the bars.
+		 * @param stroke {@code Stroke} instance which will be used to paint
+		 * the border of a box and the lines of the bars.
+		 */
+		public void setBoxBorderStroke(Stroke stroke) {
+			this.boxBorderStroke = stroke;
+		}
+
+		/**
+		 * Returns the paint which is used to fill the lines of the whiskers.
+		 * @return Paint which is used to fill the lines of the whiskers.
+		 */
+		public Paint getWhiskerColor() {
+			return whiskerColor;
+		}
+
+		/**
+		 * Sets the paint which will be used to fill the lines of the whiskers.
+		 * @param color Paint which will be used to fill the lines of the
+		 * whiskers.
+		 */
+		public void setWhiskerColor(Paint color) {
+			this.whiskerColor = color;
+		}
+
+		/**
+		 * Returns the stroke which is used to paint the lines of the whiskers.
+		 * @return {@code Stroke} instance which is used to paint the lines of
+		 * the whiskers.
+		 */
+		public Stroke getWhiskerStroke() {
+			return whiskerStroke;
+		}
+
+		/**
+		 * Sets the stroke which will be used to paint the lines of the
+		 * whiskers.
+		 * @param stroke {@code Stroke} instance which will be used to paint
+		 * the lines of the whiskers.
+		 */
+		public void setWhiskerStroke(Stroke stroke) {
+			this.whiskerStroke = stroke;
+		}
+
+		/**
+		 * Returns the relative width of the bottom and top bars.
+		 * @return Relative width of the bottom and top bars.
+		 */
+		public double getBarWidth() {
+			return barWidth;
+		}
+
+		/**
+		 * Sets the relative width of the bottom and top bars.
+		 * @param width Relative width of the bottom and top bars.
+		 */
+		public void setBarWidth(double width) {
+			this.barWidth = width;
+		}
+
+		/**
+		 * Returns the paint which is used to fill the lines of the center bar.
+		 * @return Paint which is used to fill the lines of the center bar.
+		 */
+		public Paint getCenterBarColor() {
+			return centerBarColor;
+		}
+
+		/**
+		 * Sets the paint which will be used to fill the lines of the center
+		 * bar.
+		 * @param color Paint which will be used to fill the lines of the
+		 * center bar.
+		 */
+		public void setCenterBarColor(Paint color) {
+			this.centerBarColor = color;
+		}
+
+		/**
+		 * Returns the stroke which is used to paint the lines of the center
+		 * bar.
+		 * @return {@code Stroke} instance which is used to paint the lines of
+		 * the center bar.
+		 */
+		public Stroke getCenterBarStroke() {
+			return centerBarStroke;
+		}
+
+		/**
+		 * Sets the stroke which will be used to paint the lines of the
+		 * center bar.
+		 * @param stroke {@code Stroke} instance which will be used to paint
+		 * the lines of the center bar.
+		 */
+		public void setCenterBarStroke(Stroke stroke) {
+			this.centerBarStroke = stroke;
+		}
+
+		@Override
 		public Drawable getPoint(final PointData data, final Shape shape) {
 			return new AbstractDrawable() {
 				/** Version id for serialization. */
@@ -202,12 +494,12 @@ public class BoxPlot extends XYPlot {
 
 					// Get the values from data columns
 					BoxWhiskerRenderer renderer =  BoxWhiskerRenderer.this;
-					int colPos = renderer.<Integer>getSetting(COLUMN_POSITION);
-					int colBarCenter = renderer.<Integer>getSetting(COLUMN_BAR_CENTER);
-					int colBarBottom = renderer.<Integer>getSetting(COLUMN_BAR_BOTTOM);
-					int colBoxBottom = renderer.<Integer>getSetting(COLUMN_BOX_BOTTOM);
-					int colBoxTop = renderer.<Integer>getSetting(COLUMN_BOX_TOP);
-					int colBarTop = renderer.<Integer>getSetting(COLUMN_BAR_TOP);
+					int colPos = renderer.getPositionColumn();
+					int colBarCenter = renderer.getCenterBarColumn();
+					int colBarBottom = renderer.getBottomBarColumn();
+					int colBoxBottom = renderer.getBoxBottomColumn();
+					int colBoxTop = renderer.getBoxTopColumn();
+					int colBarTop = renderer.getTopBarColumn();
 
 					if (!row.isColumnNumeric(colPos) ||
 							!row.isColumnNumeric(colBarCenter) ||
@@ -226,8 +518,7 @@ public class BoxPlot extends XYPlot {
 					double valueYBarTop = ((Number) row.get(colBarTop)).doubleValue();
 
 					// Calculate positions in screen units
-					double boxWidthRel = BoxWhiskerRenderer.this.
-						<Number>getSetting(BOX_WIDTH).doubleValue();
+					double boxWidthRel = getBoxWidth();
 					double boxAlign = 0.5;
 					// Box X
 					double boxXMin = axisXRenderer
@@ -251,8 +542,7 @@ public class BoxPlot extends XYPlot {
 						axisY, valueYBarTop, true, false).get(PointND.Y);
 					double boxWidth = Math.abs(boxXMax - boxXMin);
 					// Bars
-					double barWidthRel = BoxWhiskerRenderer.this.
-						<Number>getSetting(BAR_WIDTH).doubleValue();
+					double barWidthRel = getBarWidth();
 					double barXMin = boxXMin + (1.0 - barWidthRel)*boxWidth/2.0;
 					double barXMax = boxXMax - (1.0 - barWidthRel)*boxWidth/2.0;
 
@@ -292,28 +582,21 @@ public class BoxPlot extends XYPlot {
 
 					// Paint shapes
 					Graphics2D graphics = context.getGraphics();
-					ColorMapper paintBoxMapper =
-						BoxWhiskerRenderer.this.getSetting(BOX_BACKGROUND);
+					ColorMapper paintBoxMapper = getBoxBackground();
 					Paint paintBox;
 					if (paintBoxMapper instanceof ContinuousColorMapper) {
 						paintBox = ((ContinuousColorMapper) paintBoxMapper)
 							.get(valueX);
 					} else {
-						Integer index = Integer.valueOf(row.getIndex());
+						int index = data.index;
 						paintBox = paintBoxMapper.get(index);
 					}
-					Paint paintStrokeBox =
-						BoxWhiskerRenderer.this.getSetting(BOX_COLOR);
-					Stroke strokeBox =
-						BoxWhiskerRenderer.this.getSetting(BOX_BORDER);
-					Paint paintWhisker =
-						BoxWhiskerRenderer.this.getSetting(WHISKER_COLOR);
-					Stroke strokeWhisker =
-						BoxWhiskerRenderer.this.getSetting(WHISKER_STROKE);
-					Paint paintBarCenter =
-						BoxWhiskerRenderer.this.getSetting(BAR_CENTER_COLOR);
-					Stroke strokeBarCenter =
-						BoxWhiskerRenderer.this.getSetting(BAR_CENTER_STROKE);
+					Paint paintStrokeBox = getBoxBorderColor();
+					Stroke strokeBox = getBoxBorderStroke();
+					Paint paintWhisker = getWhiskerColor();
+					Stroke strokeWhisker = getWhiskerStroke();
+					Paint paintBarCenter = getCenterBarColor();
+					Stroke strokeBarCenter = getCenterBarStroke();
 					// Fill box
 					GraphicsUtils.fillPaintedShape(
 						graphics, box, paintBox, box.getBounds2D());
@@ -348,18 +631,26 @@ public class BoxPlot extends XYPlot {
 		 * @return Outline that describes the point's shape.
 		 */
 		public Shape getPointShape(PointData data) {
-			return getSetting(SHAPE);
+			return getShape();
 		}
 
-		@Override
-		protected <T> void setSetting(Key key, T value, boolean isDefault) {
-			// Be nice and automatically convert colors to color mappers
-			if (value instanceof Paint && BOX_BACKGROUND.equals(key)) {
-				super.setSetting(key, new SingleColor((Paint) value), isDefault);
-			} else {
-				super.setSetting(key, value, isDefault);
-			}
-		};
+		/**
+		 * Returns a graphical representation of the value label to be drawn for
+		 * the specified data value.
+		 * @param data Information on axes, renderers, and values.
+		 * @param shape Outline that describes the bounds for the value label.
+		 * @return Component that can be used to draw the value label.
+		 */
+		public Drawable getValue(final PointData data, final Shape shape) {
+			return new AbstractDrawable() {
+				/** Version id for serialization. */
+				private static final long serialVersionUID1 = 6788431763837737592L;
+
+				public void draw(DrawingContext context) {
+					// TODO Implement rendering of value label
+				}
+			};
+		}
 	}
 
 	/**
@@ -369,39 +660,6 @@ public class BoxPlot extends XYPlot {
 	public static class BoxPlotLegend extends ValueLegend {
 		/** Version id for serialization. */
 		private static final long serialVersionUID = 1517792984459627757L;
-		/** Source for dummy data. */
-		@SuppressWarnings("unchecked")
-		private static final DataSource DUMMY_DATA = new AbstractDataSource(
-				Double.class, Double.class, Double.class,
-				Double.class, Double.class, Double.class) {
-			/** Version id for serialization. */
-			private static final long serialVersionUID = -8233716728143117368L;
-
-			/** Positions of x position, center bar, bottom bar, box bottom,
-			box top, and top bar. */
-			private final Double[] values = { 0.5, 0.0, 0.0, 1.0, 1.0 };
-
-			/**
-			 * Returns the number of rows of the data source.
-			 * @return number of rows in the data source.
-			 */
-			public int getRowCount() {
-				return 1;
-			}
-
-			/**
-			 * Returns the value with the specified row and column index.
-			 * @param col index of the column to return
-			 * @param row index of the row to return
-			 * @return the specified value of the data cell
-			 */
-			public Comparable<?> get(int col, int row) {
-				if (col == 0) {
-					return Double.valueOf(row + 1);
-				}
-				return values[col - 1];
-			}
-		};
 
 		/** Associated plot. */
 		private final BoxPlot plot;
@@ -414,70 +672,35 @@ public class BoxPlot extends XYPlot {
 			this.plot = plot;
 		}
 
-		/**
-		 * Returns a symbol for rendering a legend item.
-		 * @param row Data row.
-		 * @return A drawable object that can be used to display the symbol.
-		 */
-		public Drawable getSymbol(final Row row) {
-			return new AbstractSymbol(this) {
-				/** Version id for serialization. */
-				private static final long serialVersionUID = 1906894939358065143L;
+		@Override
+		protected Drawable getSymbol(final Row row) {
+			return new LegendSymbol(row, (BoxWhiskerRenderer) plot.getPointRenderers(row.getSource()).get(0),
+					plot.getFont(), plot.getLegend().getSymbolSize());
+		}
+	}
 
-				/**
-				 * Draws the {@code Drawable} with the specified drawing context.
-				 * @param context Environment used for drawing
-				 */
-				public void draw(DrawingContext context) {
-					DataSource data = row.getSource();
+	private static class LegendSymbol extends AbstractLegend.AbstractSymbol {
+		private final Row row;
+		private final BoxWhiskerRenderer boxWhiskerRenderer;
 
-					PointRenderer pointRenderer = plot.getPointRenderer(data);
-					if (pointRenderer == null) {
-						return;
-					}
+		public LegendSymbol(Row row, BoxWhiskerRenderer boxWhiskerRenderer, Font font, Dimension2D symbolSize) {
+			super(font, symbolSize);
+			this.row = row;
+			this.boxWhiskerRenderer = boxWhiskerRenderer;
+		}
 
-					Row symbolRow = new Row(DUMMY_DATA, row.getIndex());
-					Rectangle2D bounds = getBounds();
+		@Override
+		public void draw(DrawingContext context) {
+			Shape shape = new Rectangle2D.Double(0.0, 0.0, getBounds().getWidth(), getBounds().getHeight());
 
-					Number boxWidthRelObj = pointRenderer.<Number>getSetting(
-						BoxWhiskerRenderer.BOX_WIDTH);
-					double boxWidthRel = 1.0;
-					if (boxWidthRelObj != null) {
-						boxWidthRel = boxWidthRelObj.doubleValue();
-					}
-
-					double posX = ((Number) row.get(0)).doubleValue();
-					Axis axisX = new Axis(posX - boxWidthRel/2.0, posX + boxWidthRel/2.0);
-					AxisRenderer axisRendererX = new LinearRenderer2D();
-					axisRendererX.setSetting(LinearRenderer2D.SHAPE, new Line2D.Double(
-							bounds.getMinX(), bounds.getMaxY(),
-							bounds.getMaxX(), bounds.getMaxY()));
-					Axis axisY = new Axis(1.0, 2.0);
-					AxisRenderer axisRendererY = new LinearRenderer2D();
-					axisRendererY.setSetting(LinearRenderer2D.SHAPE, new Line2D.Double(
-							bounds.getMinX(), bounds.getMaxY(),
-							bounds.getMinX(), bounds.getMinY()));
-
-					PointData pointData = new PointData(
-						Arrays.asList(axisX, axisY),
-						Arrays.asList(axisRendererX, axisRendererY),
-						symbolRow, 0);
-					Shape shape = pointRenderer.getPointShape(pointData);
-					Drawable drawable = pointRenderer.getPoint(pointData, shape);
-
-					DataPoint point = new DataPoint(pointData,
-						new PointND<Double>(bounds.getCenterX(),
-						bounds.getCenterY()), drawable, shape);
-
-					Graphics2D graphics = context.getGraphics();
-					graphics.draw(bounds);
-					Point2D pos = point.position.getPoint2D();
-					AffineTransform txOrig = graphics.getTransform();
-					graphics.translate(pos.getX(), pos.getY());
-					point.drawable.draw(context);
-					graphics.setTransform(txOrig);
-				}
-			};
+			Graphics2D graphics = context.getGraphics();
+			AffineTransform txOrig = graphics.getTransform();
+			graphics.translate(getX(), getY());
+			GraphicsUtils.fillPaintedShape(context.getGraphics(), shape,
+					boxWhiskerRenderer.getBoxBackground().get(row.getIndex()), null);
+			GraphicsUtils.drawPaintedShape(context.getGraphics(), shape, boxWhiskerRenderer.getBoxBorderColor(),
+					null, boxWhiskerRenderer.getBoxBorderStroke());
+			graphics.setTransform(txOrig);
 		}
 	}
 
@@ -488,13 +711,11 @@ public class BoxPlot extends XYPlot {
 	public BoxPlot(DataSource data) {
 		setLegend(new BoxPlotLegend(this));
 
-		getPlotArea().setSettingDefault(XYPlotArea2D.GRID_MAJOR_X, false);
-		getAxisRenderer(AXIS_X).setSetting(AxisRenderer.TICKS_SPACING, 1.0);
-		getAxisRenderer(AXIS_X).setSetting(AxisRenderer.TICKS_MINOR, false);
-		getAxisRenderer(AXIS_X).setSetting(AxisRenderer.INTERSECTION,
-			-Double.MAX_VALUE);
-		getAxisRenderer(AXIS_Y).setSetting(AxisRenderer.INTERSECTION,
-			-Double.MAX_VALUE);
+		((XYPlotArea2D) getPlotArea()).setMajorGridX(false);
+		getAxisRenderer(AXIS_X).setTickSpacing(1.0);
+		getAxisRenderer(AXIS_X).setMinorTicksVisible(false);
+		getAxisRenderer(AXIS_X).setIntersection(-Double.MAX_VALUE);
+		getAxisRenderer(AXIS_Y).setIntersection(-Double.MAX_VALUE);
 
 		add(data);
 		autoscaleAxes();
@@ -543,29 +764,63 @@ public class BoxPlot extends XYPlot {
 			throw new IllegalArgumentException(
 				"This plot type only supports a single data source."); //$NON-NLS-1$
 		}
+		// By the looks of it, some objects depend on a BoxWhiskerRenderer being present when super.add is called
+		// However, super.add overwrites renderers, so we have to create the BoxWhiskerRenderer twice.
+		BoxWhiskerRenderer renderer = new BoxWhiskerRenderer();
+		setPointRenderers(source, renderer);
 		super.add(index, source, visible);
-		setLineRenderer(source, null);
-		setPointRenderer(source, new BoxWhiskerRenderer());
+		// FIXME: Overwrites possible present point and line renderers
+		setLineRenderers(source, null);
+		setPointRenderers(source, renderer);
 	}
 
 	@Override
 	public void autoscaleAxis(String axisName) {
-		if (AXIS_X.equals(axisName)) {
-			for (DataSource data : getData()) {
-				Column col0 = data.getColumn(0);
-				getAxis(AXIS_X).setRange(
-					col0.getStatistics(Statistics.MIN) - 0.5,
-					col0.getStatistics(Statistics.MAX) + 0.5);
-			}
-		} else if (AXIS_Y.equals(axisName)) {
-			for (DataSource data : getData()) {
-				double yMin = data.getColumn(2).getStatistics(Statistics.MIN);
-				double yMax = data.getColumn(5).getStatistics(Statistics.MAX);
-				double ySpacing = 0.05*(yMax - yMin);
-				getAxis(AXIS_Y).setRange(yMin - ySpacing, yMax + ySpacing);
-			}
-		} else {
+		if (!AXIS_X.equals(axisName) && !AXIS_Y.equals(axisName)) {
 			super.autoscaleAxis(axisName);
 		}
+		Axis axis = getAxis(axisName);
+		if (axis == null || !axis.isAutoscaled()) {
+			return;
+		}
+
+		List<DataSource> sources = getData();
+		if (sources.isEmpty()) {
+			return;
+		}
+
+		boolean isXAxis = AXIS_X.equals(axisName);
+
+		double min = Double.MAX_VALUE;
+		double max = Double.MIN_VALUE;
+		for (DataSource data : sources) {
+			BoxWhiskerRenderer pointRenderer = null;
+			for (PointRenderer p : getPointRenderers(data)) {
+				if (p instanceof BoxWhiskerRenderer) {
+					pointRenderer = (BoxWhiskerRenderer) p;
+					break;
+				}
+			}
+
+			if (pointRenderer == null) {
+				continue;
+			}
+
+			int minColumnIndex, maxColumnIndex;
+			if (isXAxis) {
+				minColumnIndex = pointRenderer.getPositionColumn();
+				maxColumnIndex = pointRenderer.getPositionColumn();
+			} else {
+				minColumnIndex = pointRenderer.getBottomBarColumn();
+				maxColumnIndex = pointRenderer.getTopBarColumn();
+			}
+
+			min = Math.min(min, data.getColumn(minColumnIndex)
+					.getStatistics(Statistics.MIN));
+			max = Math.max(max, data.getColumn(maxColumnIndex)
+					.getStatistics(Statistics.MAX));
+		}
+		double spacing = (isXAxis) ? 0.5 : 0.05*(max - min);
+		axis.setRange(min - spacing, max + spacing);
 	}
 }

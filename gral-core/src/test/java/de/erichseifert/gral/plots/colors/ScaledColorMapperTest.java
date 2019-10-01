@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -72,7 +72,7 @@ public class ScaledColorMapperTest {
 		assertEquals(42.0, cm.getScale(), DELTA);
 	}
 
-	private static final void assertColor(double expected, Paint p) {
+	private static void assertColor(double expected, Paint p) {
 		Color c = (Color) p;
 		int e = (int) MathUtils.limit(expected*255.0 + 0.5, 0, 255);
 		assertEquals(e, c.getRed());

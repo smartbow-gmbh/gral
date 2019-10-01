@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -32,6 +32,8 @@ import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,25 +56,31 @@ import de.erichseifert.gral.graphics.Container;
 import de.erichseifert.gral.graphics.Drawable;
 import de.erichseifert.gral.graphics.DrawableContainer;
 import de.erichseifert.gral.graphics.DrawingContext;
-import de.erichseifert.gral.graphics.EdgeLayout;
-import de.erichseifert.gral.graphics.OuterEdgeLayout;
+import de.erichseifert.gral.graphics.layout.EdgeLayout;
+import de.erichseifert.gral.graphics.Label;
+import de.erichseifert.gral.graphics.layout.OuterEdgeLayout;
 import de.erichseifert.gral.plots.axes.Axis;
 import de.erichseifert.gral.plots.axes.AxisRenderer;
-import de.erichseifert.gral.plots.settings.Key;
-import de.erichseifert.gral.plots.settings.SettingChangeEvent;
+import de.erichseifert.gral.plots.legends.Legend;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Location;
-import de.erichseifert.gral.util.Tuple;
+import de.erichseifert.gral.graphics.Location;
+import de.erichseifert.gral.util.MathUtils;
+import de.erichseifert.gral.util.SerializationUtils;
 
 
 /**
  * Basic implementation of a plot that can listen to changes of data sources
  * and settings.
  */
-public abstract class AbstractPlot extends StylableContainer
+public abstract class AbstractPlot extends DrawableContainer
 		implements Plot, DataListener {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = -6609155385940228771L;
+
+	/** Default size of the plot title relative to the size of the base font. */
+	private static final float DEFAULT_TITLE_FONT_SIZE = 1.5f;
+	/** Default space between layout components relative to the size of the base font. */
+	private static final float DEFAULT_LAYOUT_GAP = 2f;
 
 	/** Data sources. */
 	private final List<DataSource> data;
@@ -87,7 +95,7 @@ public abstract class AbstractPlot extends StylableContainer
 	private final Map<String, Drawable> axisDrawables;
 
 	/** Mapping of data source columns to axes. **/
-	private final Map<Tuple, String> mapping;
+	private final Map<DataSource, Map<Integer, String>> columnToAxisMappingByDataSource;
 	/** Minimum values of axes. **/
 	private final Map<String, Double> axisMin;
 	/** Maximum values of axes. **/
@@ -102,6 +110,24 @@ public abstract class AbstractPlot extends StylableContainer
 	/** AbstractPlot legend. */
 	private Legend legend;
 
+	/** Paint to fill the plot background. */
+	private Paint background;
+	/** Stroke to draw the plot border. */
+	private transient Stroke borderStroke;
+	/** Paint to fill the plot border. */
+	private Paint borderColor;
+
+	/** Base font which is used as default for other elements of the plot and
+	for calculation of relative sizes. */
+	private Font font;
+
+	/** Decides whether a legend will be shown. */
+	private boolean legendVisible;
+	/** Positioning of the legend. */
+	private Location legendLocation;
+	/** Distance of the legend to the plot area. */
+	private double legendDistance;
+
     private Collection<RowShape> shapes;
 
 	/**
@@ -110,39 +136,43 @@ public abstract class AbstractPlot extends StylableContainer
 	 * @param series Initial data series to be displayed.
 	 */
 	public AbstractPlot(DataSource... series) {
-		super(new EdgeLayout(20.0, 20.0));
+		super(new EdgeLayout());
 		shapes = new ArrayList<RowShape>();
-		title = new Label(); //$NON-NLS-1$
-		title.setSetting(Label.FONT, Font.decode(null).deriveFont(18f));
+		dataVisible = new HashSet<>();
 
-		legendContainer = new DrawableContainer(new OuterEdgeLayout(0.0));
+		axes = new HashMap<>();
+		axisRenderers = new HashMap<>();
+		axisDrawables = new HashMap<>();
 
-		dataVisible = new HashSet<DataSource>();
+		columnToAxisMappingByDataSource = new HashMap<>();
+		axisMin = new HashMap<>();
+		axisMax = new HashMap<>();
 
-		axes = new HashMap<String, Axis>();
-		axisRenderers = new HashMap<String, AxisRenderer>();
-		axisDrawables = new HashMap<String, Drawable>();
-
-		mapping = new HashMap<Tuple, String>();
-		axisMin = new HashMap<String, Double>();
-		axisMax = new HashMap<String, Double>();
-
-		data = new LinkedList<DataSource>();
+		data = new LinkedList<>();
 		for (DataSource source : series) {
 			add(source);
 		}
 
-		setSettingDefault(TITLE, null);
-		setSettingDefault(TITLE_FONT, Font.decode(null).deriveFont(18f));
-		setSettingDefault(BACKGROUND, null);
-		setSettingDefault(BORDER, null);
-		setSettingDefault(COLOR, Color.BLACK);
-		setSettingDefault(ANTIALISING, true);
-		setSettingDefault(LEGEND, false);
-		setSettingDefault(LEGEND_LOCATION, Location.CENTER);
-		setSettingDefault(LEGEND_DISTANCE, 2.0);
+		// No background or border by default
+		background = null;
+		borderStroke = null;
+		borderColor = Color.BLACK;
 
+		// Use system standard font as base font
+		font = Font.decode(null);
+		updateBaseFont();
+
+		// Create title
+		title = new Label();
+		title.setFont(font.deriveFont(DEFAULT_TITLE_FONT_SIZE*font.getSize2D()));
 		add(title, Location.NORTH);
+
+		// Create legend, but don't show it by default
+		legendContainer = new DrawableContainer(new OuterEdgeLayout(0.0));
+		legendLocation = Location.CENTER;
+		legendDistance = 2.0;
+		legendVisible = false;
+		refreshLegendLayout();
 	}
 
 	/**
@@ -153,21 +183,14 @@ public abstract class AbstractPlot extends StylableContainer
 	public void draw(DrawingContext context) {
 		Graphics2D graphics = context.getGraphics();
 
-		Boolean antialiasing = getSetting(ANTIALISING);
-
-		graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-				(antialiasing != null && antialiasing.booleanValue())
-					? RenderingHints.VALUE_ANTIALIAS_ON
-					: RenderingHints.VALUE_ANTIALIAS_OFF);
-
-		Paint bg = getSetting(BACKGROUND);
+		Paint bg = getBackground();
 		if (bg != null) {
 			GraphicsUtils.fillPaintedShape(graphics, getBounds(), bg, null);
 		}
 
-		Stroke stroke = getSetting(BORDER);
+		Stroke stroke = getBorderStroke();
 		if (stroke != null) {
-			Paint fg = getSetting(COLOR);
+			Paint fg = getBorderColor();
 			GraphicsUtils.drawPaintedShape(
 					graphics, getBounds(), fg, null, stroke);
 		}
@@ -228,8 +251,7 @@ public abstract class AbstractPlot extends StylableContainer
 	 * @param context Environment used for drawing.
 	 */
 	protected void drawLegend(DrawingContext context) {
-		Boolean isVisible = this.<Boolean>getSetting(LEGEND);
-		if (isVisible == null || !isVisible.booleanValue() || getLegend() == null) {
+		if (!isLegendVisible() || getLegend() == null) {
 			return;
 		}
 		getLegend().draw(context);
@@ -407,9 +429,11 @@ public abstract class AbstractPlot extends StylableContainer
 	protected void setPlotArea(PlotArea plotArea) {
 		if (this.plotArea != null) {
 			remove(this.plotArea);
+			this.plotArea.setBaseFont(null);
 		}
 		this.plotArea = plotArea;
 		if (this.plotArea != null) {
+			this.plotArea.setBaseFont(font);
 			add(this.plotArea, Location.CENTER);
 		}
 	}
@@ -446,10 +470,12 @@ public abstract class AbstractPlot extends StylableContainer
 		if (this.legend != null) {
 			legendContainer.remove(this.legend);
 			this.legend.clear();
+			this.legend.setBaseFont(null);
 		}
 		this.legend = legend;
 		if (this.legend != null) {
-			Location constraints = getSetting(LEGEND_LOCATION);
+			this.legend.setBaseFont(font);
+			Location constraints = getLegendLocation();
 			legendContainer.add(legend, constraints);
 			for (DataSource source : getVisibleData()) {
 				legend.add(source);
@@ -458,40 +484,109 @@ public abstract class AbstractPlot extends StylableContainer
 	}
 
 	/**
-	 * Invoked if a setting has changed.
-	 * @param event Event containing information about the changed setting.
+	 * Refreshes the positioning and spacing of the legend.
 	 */
-	@Override
-	public void settingChanged(SettingChangeEvent event) {
-		Key key = event.getKey();
-		if (TITLE.equals(key)) {
-			String text = getSetting(TITLE);
-			if (text == null) {
-				text = ""; //$NON-NLS-1$
-			}
-			title.setText(text);
-		} else if (TITLE_FONT.equals(key)) {
-			Font font = getSetting(TITLE_FONT);
-			if (font == null) {
-				font = Font.decode(null).deriveFont(18f);
-			}
-			title.setSetting(Label.FONT, font);
-		} else if (LEGEND_LOCATION.equals(key)) {
-			Location constraints = getSetting(LEGEND_LOCATION);
-			if (legend != null) {
-				legendContainer.remove(legend);
-				legendContainer.add(legend, constraints);
-			}
-		} else if (LEGEND_DISTANCE.equals(key)) {
-			// TODO Use real font size instead of fixed value
-			final double fontSize = 10.0;
-
-			Number distanceObj = getSetting(LEGEND_DISTANCE);
-			double distance = distanceObj.doubleValue()*fontSize;
-
-			OuterEdgeLayout layout = new OuterEdgeLayout(distance);
-			legendContainer.setLayout(layout);
+	protected void refreshLegendLayout() {
+		double absoluteLegendDistance = 0.0;
+		if (MathUtils.isCalculatable(legendDistance)) {
+			absoluteLegendDistance = legendDistance*font.getSize2D();
 		}
+
+		OuterEdgeLayout layout = new OuterEdgeLayout(absoluteLegendDistance);
+		legendContainer.setLayout(layout);
+	}
+
+	@Override
+	public Paint getBackground() {
+		return background;
+	}
+
+	@Override
+	public void setBackground(Paint background) {
+		this.background = background;
+	}
+
+	@Override
+	public Stroke getBorderStroke() {
+		return borderStroke;
+	}
+
+	@Override
+	public void setBorderStroke(Stroke border) {
+		this.borderStroke = border;
+	}
+
+	@Override
+	public Paint getBorderColor() {
+		return borderColor;
+	}
+
+	@Override
+	public void setBorderColor(Paint color) {
+		this.borderColor = color;
+	}
+
+	@Override
+	public Font getFont() {
+		return font;
+	}
+
+	@Override
+	public void setFont(Font font) {
+		this.font = font;
+		updateBaseFont();
+	}
+
+	private void updateBaseFont() {
+		// Update layout
+		float gap = DEFAULT_LAYOUT_GAP*font.getSize2D();
+		getLayout().setGapX(gap);
+		getLayout().setGapY(gap);
+
+		// Update plot area
+		if (plotArea != null) {
+			plotArea.setBaseFont(font);
+		}
+
+		// Update legend
+		if (legend != null) {
+			legend.setBaseFont(font);
+		}
+	}
+
+	@Override
+	public boolean isLegendVisible() {
+		return legendVisible;
+	}
+
+	@Override
+	public void setLegendVisible(boolean legendVisible) {
+		this.legendVisible = legendVisible;
+	}
+
+	@Override
+	public Location getLegendLocation() {
+		return legendLocation;
+	}
+
+	@Override
+	public void setLegendLocation(Location location) {
+		legendLocation = location;
+		if (legend != null) {
+			legendContainer.remove(legend);
+			legendContainer.add(legend, legendLocation);
+		}
+	}
+
+	@Override
+	public double getLegendDistance() {
+		return legendDistance;
+	}
+
+	@Override
+	public void setLegendDistance(double distance) {
+		legendDistance = distance;
+		refreshLegendLayout();
 	}
 
 	/**
@@ -591,12 +686,8 @@ public abstract class AbstractPlot extends StylableContainer
 	 * @return Axis name or {@code null} if no mapping exists.
 	 */
 	private String getMapping(DataSource source, int col) {
-		if (!contains(source)) {
-			return null;
-		}
-		Tuple mapKey = new Tuple(source, col);
-		String axisName = mapping.get(mapKey);
-		return axisName;
+		Map<Integer, String> columnToAxisMapping = columnToAxisMappingByDataSource.get(source);
+		return columnToAxisMapping != null ? columnToAxisMapping.get(col) : null;
 	}
 
 	/**
@@ -634,13 +725,14 @@ public abstract class AbstractPlot extends StylableContainer
 				"Data source only has {0,number,integer} column, {1,number,integer} values given.", //$NON-NLS-1$
 				source.getColumnCount(), axisNames.length));
 		}
+		Map<Integer, String> columnToAxisMapping = new HashMap<>();
 		for (int col = 0; col < axisNames.length; col++) {
 			String axisName = axisNames[col];
 			if (axisName != null) {
-				Tuple mapKey = new Tuple(source, col);
-				mapping.put(mapKey, axisName);
+				columnToAxisMapping.put(col, axisName);
 			}
 		}
+		columnToAxisMappingByDataSource.put(source, columnToAxisMapping);
 		invalidateAxisExtrema();
 	}
 
@@ -692,7 +784,7 @@ public abstract class AbstractPlot extends StylableContainer
 	 * @return List of all visible data series.
 	 */
 	public List<DataSource> getVisibleData() {
-		List<DataSource> visible = new LinkedList<DataSource>();
+		List<DataSource> visible = new LinkedList<>();
 		for (DataSource s : data) {
 			if (dataVisible.contains(s)) {
 				visible.add(s);
@@ -772,9 +864,6 @@ public abstract class AbstractPlot extends StylableContainer
 	 */
 	protected void dataChanged(DataSource source, DataChangeEvent... events) {
 		invalidateAxisExtrema();
-		if (getLegend() != null) {
-			getLegend().refresh();
-		}
 		autoscaleAxes();
 		layout();
 	}
@@ -792,23 +881,26 @@ public abstract class AbstractPlot extends StylableContainer
 	 */
 	private void revalidateAxisExtrema() {
 		synchronized (this) {
-			for (Entry<Tuple, String> entry : mapping.entrySet()) {
-				Tuple mapKey = entry.getKey();
-				DataSource s = (DataSource) mapKey.get(0);
-				Column col = s.getColumn((Integer) mapKey.get(1));
-				String axisName = entry.getValue();
+			for (Entry<DataSource, Map<Integer, String>> entryByDataSource : columnToAxisMappingByDataSource.entrySet()) {
+				DataSource dataSource = entryByDataSource.getKey();
+				Map<Integer, String> columnToAxisMapping = entryByDataSource.getValue();
+				for (Entry<Integer, String> entry : columnToAxisMapping.entrySet()) {
+					Integer colIndex = entry.getKey();
+					String axisName = entry.getValue();
 
-				Double min = axisMin.get(axisName);
-				Double max = axisMax.get(axisName);
-				if (min == null || max == null) {
-					min = col.getStatistics(Statistics.MIN);
-					max = col.getStatistics(Statistics.MAX);
-				} else {
-					min = Math.min(min, col.getStatistics(Statistics.MIN));
-					max = Math.max(max, col.getStatistics(Statistics.MAX));
+					Column<?> col = dataSource.getColumn(colIndex);
+					Double min = axisMin.get(axisName);
+					Double max = axisMax.get(axisName);
+					if (min == null || max == null) {
+						min = col.getStatistics(Statistics.MIN);
+						max = col.getStatistics(Statistics.MAX);
+					} else {
+						min = Math.min(min, col.getStatistics(Statistics.MIN));
+						max = Math.max(max, col.getStatistics(Statistics.MAX));
+					}
+					axisMin.put(axisName, min);
+					axisMax.put(axisName, max);
 				}
-				axisMin.put(axisName, min);
-				axisMax.put(axisName, max);
 			}
 		}
 	}
@@ -822,8 +914,31 @@ public abstract class AbstractPlot extends StylableContainer
 	 */
 	private void readObject(ObjectInputStream in)
 			throws ClassNotFoundException, IOException {
-		// Normal deserialization
+		// Default deserialization
 		in.defaultReadObject();
+		// Custom deserialization
+		borderStroke = (Stroke) SerializationUtils.unwrap(
+				(Serializable) in.readObject());
+
+		// Restore listeners
+		for (DataSource source : getData()) {
+			source.addDataListener(this);
+		}
+	}
+
+	/**
+	 * Custom serialization method.
+	 * @param out Output stream.
+	 * @throws ClassNotFoundException if a serialized class doesn't exist.
+	 * @throws IOException if there is an error while writing data to the
+	 *         output stream.
+	 */
+	private void writeObject(ObjectOutputStream out)
+			throws ClassNotFoundException, IOException {
+		// Default serialization
+		out.defaultWriteObject();
+		// Custom serialization
+		out.writeObject(SerializationUtils.wrap(borderStroke));
 
 		// Restore listeners
 		for (DataSource source : getData()) {

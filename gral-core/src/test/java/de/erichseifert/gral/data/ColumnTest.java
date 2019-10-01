@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,12 +21,16 @@
  */
 package de.erichseifert.gral.data;
 
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-
+import java.util.Arrays;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,76 +39,133 @@ import de.erichseifert.gral.data.statistics.Statistics;
 
 public class ColumnTest {
 	private static final double DELTA = TestUtils.DELTA;
-	private static DataTable table;
+	private static Column<Integer> col1;
+	private static Column<Integer> col2;
 
 	@BeforeClass
 	@SuppressWarnings("unchecked")
 	public static void setUpBeforeClass() {
-		table = new DataTable(Integer.class, Integer.class);
-		table.add(1, 1); // 0
-		table.add(2, 3); // 1
-		table.add(3, 2); // 2
-		table.add(4, 6); // 3
-		table.add(5, 4); // 4
-		table.add(6, 8); // 5
-		table.add(7, 9); // 6
-		table.add(8, 11); // 7
+		col1 = new Column<>(Integer.class, 1, 2, 3, 4, 5, 6, 7, 8);
+		col2 = new Column<>(Integer.class, 1, 3, 2, 6, 4, 8, 9, 11);
 	}
 
 	@Test
-	public void testCreation() {
-		Column col1 = new Column(table, 0);
-		assertEquals(table, col1.getSource());
-		assertEquals(0, col1.getIndex());
-		assertEquals(table.getRowCount(), col1.size());
+	public void testColumnFromIterableContainsValues() {
+		Iterable<Integer> data = Arrays.asList(1, 2, 3, 4);
 
-		Column col2 = new Column(table, 1);
-		assertEquals(table, col2.getSource());
-		assertEquals(1, col2.getIndex());
-		assertEquals(table.getRowCount(), col2.size());
+		Column<Integer> column = new Column<>(Integer.class, data);
+
+		assertThat(column, hasItems(1, 2, 3, 4));
 	}
 
 	@Test
-	public void testGet() {
-		Column col1 = new Column(table, 0);
-		assertEquals(table.get(0, 0), col1.get(0));
-		assertEquals(table.get(0, 1), col1.get(1));
+	public void testSizeReturnsTheNumberOfElements() {
+		Column<Integer> column = new Column<>(Integer.class, 1, 2, 3, 4);
 
-		Column col2 = new Column(null, 1);
-		assertEquals(null, col2.get(0));
-		assertEquals(null, col2.get(1));
+		int size = column.size();
+
+		assertEquals(4, size);
 	}
 
 	@Test
-	public void testEquality() {
-		// TODO Test column equality
+	public void testGetReturnsValueAtSpecifiedElement() {
+		Column<Integer> column = new Column<>(Integer.class, 1, 2, 3, 4);
+
+		int value = column.get(1);
+
+		assertEquals(2, value);
 	}
 
 	@Test
-	public void testToString() {
-		Column col1 = new Column(table, 1);
-		Column col2 = new Column(table, 1);
-		assertNotNull(col1.toString());
-		assertFalse(col1.toString().isEmpty());
+	public void testGetWithIndexOutOfColumnSizeReturnsNull() {
+		Column<Integer> col = new Column<>(Integer.class, 1, 2);
+		int colSize = col.size();
+
+		Integer elementOutOfRange = col.get(colSize);
+
+		assertThat(elementOutOfRange, nullValue());
+	}
+
+	@Test
+	public void testColumnsWithIdenticalTypesAndValuesAreEqual() {
+		Column<Integer> col1 = new Column<>(Integer.class, 1, 2, 3);
+		Column<Integer> col2 = new Column<>(Integer.class, 1, 2, 3);
+
+		boolean equal = col1.equals(col2);
+
+		assertTrue(equal);
+	}
+
+	@Test
+	public void testColumnDoesNotEqualANonColumnObject() {
+		Column<Integer> column = new Column<>(Integer.class, 1, 2, 3);
+		Object someObject = new Object();
+
+		boolean equal = column.equals(someObject);
+
+		assertFalse(equal);
+	}
+
+	@Test
+	public void testColumnsWithDifferentTypesAndIdenticalValuesAreNotEqual() {
+		Column<Integer> col1 = new Column<>(Integer.class, 1, 2, 3);
+		@SuppressWarnings("unchecked")
+		Column<?> col2 = new Column(Long.class, 1, 2, 3);
+
+		boolean equal = col1.equals(col2);
+
+		assertFalse(equal);
+	}
+
+	@Test
+	public void testColumnsWithIdenticalTypesAndDifferentValuesAreNotEqual() {
+		Column<Integer> col1 = new Column<>(Integer.class, 1, 2, 3);
+		Column<Integer> col2 = new Column<>(Integer.class, 3, 2, 1);
+
+		boolean equal = col1.equals(col2);
+
+		assertFalse(equal);
+	}
+
+	@Test
+	public void testToStringIsIdenticalForIdenticalColumns() {
+		Column col1 = new Column(Integer.class, 1, 2, 3);
+		Column col2 = new Column(Integer.class, 1, 2, 3);
 		assertEquals(col1.toString(), col2.toString());
 	}
 
 	@Test
-	public void testStatistics() {
-		Column col1 = new Column(table, 1);
-		assertEquals( 8.0, col1.getStatistics(Statistics.N),   DELTA);
-		assertEquals( 1.0, col1.getStatistics(Statistics.MIN), DELTA);
-		assertEquals(11.0, col1.getStatistics(Statistics.MAX), DELTA);
-		assertEquals(44.0, col1.getStatistics(Statistics.SUM), DELTA);
+	public void testToStringIsNotNull() {
+		assertNotNull(col1.toString());
 	}
 
 	@Test
-	public void testSerialization() throws IOException, ClassNotFoundException {
-		DataAccessor original = new Column(table, 1);
-		DataAccessor deserialized = TestUtils.serializeAndDeserialize(original);
+	public void testToStringIsNotEmpty() {
+		assertFalse(col1.toString().isEmpty());
+	}
 
-		assertEquals(table.getColumnCount(), deserialized.getSource().getColumnCount());
-		assertEquals(table.getRowCount(), deserialized.getSource().getRowCount());
-		assertEquals(1, deserialized.getIndex());
+	@Test
+	public void testStatistics() {
+		assertEquals( 8.0, col2.getStatistics(Statistics.N),   DELTA);
+		assertEquals( 1.0, col2.getStatistics(Statistics.MIN), DELTA);
+		assertEquals(11.0, col2.getStatistics(Statistics.MAX), DELTA);
+		assertEquals(44.0, col2.getStatistics(Statistics.SUM), DELTA);
+	}
+
+	@Test
+	public void testSerializationPreservesSize() throws IOException, ClassNotFoundException {
+		Column<Integer> original = new Column<>(Integer.class, 1, 2, 3);
+		Column<Integer> deserialized = TestUtils.serializeAndDeserialize(original);
+
+		assertEquals(original.size(), deserialized.size());
+	}
+
+	@Test
+	public void testGetTypeReturnsDataType() {
+		Column<Integer> column = col1;
+
+		Class<? extends Comparable<?>> columnType = column.getType();
+
+		assertEquals(Integer.class, columnType);
 	}
 }

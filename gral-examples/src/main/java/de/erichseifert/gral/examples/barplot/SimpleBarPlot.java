@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -29,11 +29,11 @@ import java.awt.LinearGradientPaint;
 import de.erichseifert.gral.data.DataTable;
 import de.erichseifert.gral.examples.ExamplePanel;
 import de.erichseifert.gral.plots.BarPlot;
-import de.erichseifert.gral.plots.points.PointRenderer;
+import de.erichseifert.gral.plots.BarPlot.BarRenderer;
 import de.erichseifert.gral.ui.InteractivePanel;
 import de.erichseifert.gral.util.GraphicsUtils;
-import de.erichseifert.gral.util.Insets2D;
-import de.erichseifert.gral.util.Location;
+import de.erichseifert.gral.graphics.Insets2D;
+import de.erichseifert.gral.graphics.Location;
 
 
 public class SimpleBarPlot extends ExamplePanel {
@@ -58,29 +58,28 @@ public class SimpleBarPlot extends ExamplePanel {
 
 		// Format plot
 		plot.setInsets(new Insets2D.Double(40.0, 40.0, 40.0, 40.0));
-		plot.setSetting(BarPlot.BAR_WIDTH, 0.075);
+		plot.setBarWidth(0.075);
 
 		// Format bars
-		PointRenderer pointRenderer = plot.getPointRenderer(data);
-		pointRenderer.setSetting(PointRenderer.COLOR,
+		BarRenderer pointRenderer = (BarRenderer) plot.getPointRenderers(data).get(0);
+		pointRenderer.setColor(
 			new LinearGradientPaint(0f,0f, 0f,1f,
 					new float[] { 0.0f, 1.0f },
 					new Color[] { COLOR1, GraphicsUtils.deriveBrighter(COLOR1) }
 			)
 		);
-		pointRenderer.setSetting(BarPlot.BarRenderer.STROKE, new BasicStroke(3f));
-		pointRenderer.setSetting(BarPlot.BarRenderer.STROKE_COLOR,
+		pointRenderer.setBorderStroke(new BasicStroke(3f));
+		pointRenderer.setBorderColor(
 			new LinearGradientPaint(0f,0f, 0f,1f,
 					new float[] { 0.0f, 1.0f },
 					new Color[] { GraphicsUtils.deriveBrighter(COLOR1), COLOR1 }
 			)
 		);
-		pointRenderer.setSetting(PointRenderer.VALUE_DISPLAYED, true);
-		pointRenderer.setSetting(PointRenderer.VALUE_COLUMN, 2);
-		pointRenderer.setSetting(PointRenderer.VALUE_LOCATION, Location.CENTER);
-		pointRenderer.setSetting(PointRenderer.VALUE_COLOR, GraphicsUtils.deriveDarker(COLOR1));
-		pointRenderer.setSetting(PointRenderer.VALUE_FONT,
-			Font.decode(null).deriveFont(Font.BOLD));
+		pointRenderer.setValueVisible(true);
+		pointRenderer.setValueColumn(2);
+		pointRenderer.setValueLocation(Location.CENTER);
+		pointRenderer.setValueColor(GraphicsUtils.deriveDarker(COLOR1));
+		pointRenderer.setValueFont(Font.decode(null).deriveFont(Font.BOLD));
 
 		// Add plot to Swing component
 		add(new InteractivePanel(plot));

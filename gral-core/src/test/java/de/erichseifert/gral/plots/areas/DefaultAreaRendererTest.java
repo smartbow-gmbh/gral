@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -24,17 +24,14 @@ package de.erichseifert.gral.plots.areas;
 import static de.erichseifert.gral.TestUtils.assertEmpty;
 import static de.erichseifert.gral.TestUtils.assertNotEmpty;
 import static de.erichseifert.gral.TestUtils.createTestImage;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -60,7 +57,7 @@ public class DefaultAreaRendererTest {
 		data = new PointData(
 			Arrays.asList(axisX, axisY),
 			Arrays.asList(axisRendererX, axisRendererY),
-			null, 0);
+			null, 0, 0);
 	}
 
 	@Test
@@ -68,8 +65,8 @@ public class DefaultAreaRendererTest {
 		// Get area
 		AreaRenderer r = new DefaultAreaRenderer2D();
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data, new PointND<Double>(0.0, 0.0), null, null),
-			new DataPoint(data, new PointND<Double>(1.0, 1.0), null, null)
+			new DataPoint(data, new PointND<>(0.0, 0.0)),
+			new DataPoint(data, new PointND<>(1.0, 1.0))
 		);
 		Shape shape = r.getAreaShape(points);
 		Drawable area = r.getArea(points, shape);
@@ -87,13 +84,13 @@ public class DefaultAreaRendererTest {
 		PointData data2 = new PointData(
 			data.axes,
 			Arrays.asList((AxisRenderer) null, null),
-			null, 0);
+			null, 0, 0);
 
 		// Get area
 		AreaRenderer r = new DefaultAreaRenderer2D();
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data2, new PointND<Double>(0.0, 0.0), null, null),
-			new DataPoint(data2, new PointND<Double>(1.0, 1.0), null, null)
+			new DataPoint(data2, new PointND<>(0.0, 0.0)),
+			new DataPoint(data2, new PointND<>(1.0, 1.0))
 		);
 		Shape shape = r.getAreaShape(points);
 		Drawable area = r.getArea(points, shape);
@@ -138,38 +135,23 @@ public class DefaultAreaRendererTest {
 	}
 
 	@Test
-	public void testSettings() {
-		// Get
-		AreaRenderer r = new DefaultAreaRenderer2D();
-		assertEquals(Color.GRAY, r.getSetting(AreaRenderer.COLOR));
-		// Set
-		r.setSetting(AreaRenderer.COLOR, Color.RED);
-		assertEquals(Color.RED, r.getSetting(AreaRenderer.COLOR));
-		// Remove
-		r.removeSetting(AreaRenderer.COLOR);
-		assertEquals(Color.GRAY, r.getSetting(AreaRenderer.COLOR));
-	}
-
-	@Test
 	public void testGap() {
 		AreaRenderer r = new DefaultAreaRenderer2D();
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data, new PointND<Double>(0.0, 0.0), null, null),
-			new DataPoint(data, new PointND<Double>(1.0, 1.0), null, null)
+			new DataPoint(data, new PointND<>(0.0, 0.0)),
+			new DataPoint(data, new PointND<>(1.0, 1.0))
 		);
 
-		List<Double> gaps = Arrays.asList(
-			(Double) null, Double.NaN,
-			Double.valueOf(0.0), Double.valueOf(1.0));
-		List<Boolean> roundeds = Arrays.asList(false, true);
+		List<Double> gaps = Arrays.asList(Double.NaN, 0.0, 1.0);
+		List<Boolean> roundedValues = Arrays.asList(false, true);
 
 		// Test different gap sizes
 		for (Double gap : gaps) {
-			r.setSetting(AreaRenderer.GAP, gap);
+			r.setGap(gap);
 
 			// Draw non-rounded and non rounded gaps
-			for (Boolean rounded : roundeds) {
-				r.setSetting(AreaRenderer.GAP_ROUNDED, rounded);
+			for (Boolean rounded : roundedValues) {
+				r.setGapRounded(rounded);
 
 				Shape shape = r.getAreaShape(points);
 				Drawable area = r.getArea(points, shape);
@@ -186,8 +168,7 @@ public class DefaultAreaRendererTest {
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
 		AreaRenderer original = new DefaultAreaRenderer2D();
+		@SuppressWarnings("unused")
 		AreaRenderer deserialized = TestUtils.serializeAndDeserialize(original);
-
-		TestUtils.assertSettings(original, deserialized);
     }
 }

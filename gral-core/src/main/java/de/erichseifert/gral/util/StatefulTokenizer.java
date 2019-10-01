@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
  *
  * The class is intended to be sub-classed to implement new grammars.
  * Different sets of rules can be defined with the method
- * {{@link #putRules(String, Rule[])}}, e.g. for string processing. Each rule
+ * {@link #putRules(String, Rule[])}, e.g. for string processing. Each rule
  * in a set produces one token with a type name and it can switch to another
  * state or switch back to the previous state with the special state
  * {@code "#pop"}. The is a list of tokens with arbitrary type.
@@ -202,8 +202,7 @@ public abstract class StatefulTokenizer {
 				return null;
 			}
 			String content = (m.groupCount() > 0) ? m.group(1) : m.group();
-			Token token = new Token(m.start(), m.end(), tokenType, content);
-			return token;
+			return new Token(m.start(), m.end(), tokenType, content);
 		}
 	}
 
@@ -211,9 +210,9 @@ public abstract class StatefulTokenizer {
 	 * Initializes the internal data structures of a new instance.
 	 */
 	protected StatefulTokenizer() {
-		joinedTypes = new HashSet<Object>();
-		ignoredTypes = new HashSet<Object>();
-		grammar = new HashMap<String, Rule[]>();
+		joinedTypes = new HashSet<>();
+		ignoredTypes = new HashSet<>();
+		grammar = new HashMap<>();
 	}
 
 	/**
@@ -258,9 +257,9 @@ public abstract class StatefulTokenizer {
 	 * @return List of tokens.
 	 */
 	public List<Token> tokenize(String data) {
-		LinkedList<Token> tokens = new LinkedList<Token>();
+		LinkedList<Token> tokens = new LinkedList<>();
 
-		Stack<String> states = new Stack<String>();
+		Stack<String> states = new Stack<>();
 		states.push(INITIAL_STATE);
 
 		int pos = 0;

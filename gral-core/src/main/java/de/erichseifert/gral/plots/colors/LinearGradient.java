@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -46,7 +46,7 @@ public class LinearGradient extends ScaledContinuousColorMapper {
 	 * @param colors Additional colors.
 	 */
 	public LinearGradient(Color color1, Color... colors) {
-		this.colors = new ArrayList<Color>();
+		this.colors = new ArrayList<>();
 		this.colors.add(color1);
 		this.colors.addAll(Arrays.asList(colors));
 	}
@@ -64,7 +64,7 @@ public class LinearGradient extends ScaledContinuousColorMapper {
 			return null;
 		}
 
-		double x = v.doubleValue();
+		double x = v;
 		int colorMax = colors.size() - 1;
 		double pos = MathUtils.limit(x*colorMax, 0.0, colorMax);
 

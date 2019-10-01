@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -91,6 +91,28 @@ public interface Navigator extends NavigationListener {
 	 * @see #setZoomable(boolean)
 	 */
 	void zoomOut();
+
+	/**
+	 * Scale the associated object at the specified point. If zooming is disabled nothing will be done. If panning is
+	 * disabled zooming will be applied around the current center.
+	 * @param zoom New zoom level.
+	 * @param zoomPoint Center point for zooming in world units.
+	 */
+	void zoomAt(double zoom, PointND<? extends Number> zoomPoint);
+
+	/**
+	 * Increases the current zoom level by the specified zoom factor and scales
+	 * the associated object at the specified point.
+	 * @param zoomPoint Center point for zooming in world units.
+	 */
+	void zoomInAt(PointND<? extends Number> zoomPoint);
+
+	/**
+	 * Decreases the current zoom level by the specified zoom factor and scales
+	 * the associated object at the specified point.
+	 * @param zoomPoint Center point for zooming in world units.
+	 */
+	void zoomOutAt(PointND<? extends Number> zoomPoint);
 
 	/**
 	 * Returns whether the associated object can be panned.

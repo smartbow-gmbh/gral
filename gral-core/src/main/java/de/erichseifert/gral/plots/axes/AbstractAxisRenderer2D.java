@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -35,8 +35,12 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.text.Format;
 import java.text.NumberFormat;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,16 +50,13 @@ import java.util.Set;
 import de.erichseifert.gral.graphics.AbstractDrawable;
 import de.erichseifert.gral.graphics.Drawable;
 import de.erichseifert.gral.graphics.DrawingContext;
-import de.erichseifert.gral.plots.Label;
+import de.erichseifert.gral.graphics.Label;
 import de.erichseifert.gral.plots.axes.Tick.TickType;
-import de.erichseifert.gral.plots.settings.BasicSettingsStorage;
-import de.erichseifert.gral.plots.settings.Key;
-import de.erichseifert.gral.plots.settings.SettingChangeEvent;
-import de.erichseifert.gral.plots.settings.SettingsListener;
 import de.erichseifert.gral.util.GeometryUtils;
 import de.erichseifert.gral.util.GraphicsUtils;
 import de.erichseifert.gral.util.MathUtils;
 import de.erichseifert.gral.util.PointND;
+import de.erichseifert.gral.util.SerializationUtils;
 
 
 /**
@@ -68,8 +69,7 @@ import de.erichseifert.gral.util.PointND;
  *   <li>Administration of settings</li>
  * </ul>
  */
-public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
-		implements AxisRenderer, SettingsListener {
+public abstract class AbstractAxisRenderer2D implements AxisRenderer, Serializable {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = 5623525683845512624L;
 	/** Line segments approximating the shape of the axis. */
@@ -78,55 +78,115 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 	private Point2D[] shapeLineNormals;
 	/** Lengths of the line segments approximating the axis. */
 	private double[] shapeSegmentLengths;
-	/** Length of the the axis up to a certain approximating line segment. */
-	private double[] shapeLengths;
+	/** Length of the axis up to a certain approximating line segment. */
+	private double[] shapeSegmentLengthsAccumulated;
+
+	/** Intersection point of the axis. */
+	private Number intersection;
+	/** Shape used for drawing. */
+	private Shape shape;
+	/** Decides whether the shape is drawn. */
+	private boolean shapeVisible;
+	/** Decides whether the shape normals are orientated clockwise. */
+	private boolean shapeNormalOrientationClockwise;
+	/** Paint used to draw axis shape, ticks, and labels. */
+	private Paint shapeColor;
+	/** Stroke used for drawing the axis shape. */
+	// Property will be serialized using a wrapper
+	private transient Stroke shapeStroke;
+	/** Decides whether the axis direction will be changed. */
+	private boolean shapeDirectionSwapped;
+
+	/** Decides whether major ticks are drawn. */
+	private boolean ticksVisible;
+	/** Distance on axis in which major ticks are drawn. */
+	private Number tickSpacing;
+	/** Decides whether automatic tick spacing is enabled. */
+	private boolean ticksAutoSpaced;
+	/** Tick length relative to the font */
+	private double tickLength;
+	/** Stroke which is used to draw all major ticks. */
+	// Property will be serialized using a wrapper
+	private transient Stroke tickStroke;
+	/** Alignment of major ticks relative to the axis. */
+	private double tickAlignment;
+	/** Font used to display the text of major ticks. */
+	private Font tickFont;
+	/** Paint used to draw the shapes of major ticks. */
+	private Paint tickColor;
+	/** Decides whether tick labels will be shown. */
+	private boolean tickLabelsVisible;
+	/** Format which converts the tick values to labels. */
+	private Format tickLabelFormat;
+	/** Distance between labels and ticks relative to the font height. */
+	private double tickLabelDistance;
+	/** Decides whether the tick labels are drawn outside of the plot. */
+	private boolean tickLabelsOutside;
+	/** Tick label rotation in degrees. */
+	private double tickLabelRotation;
+
+	/** Decides whether minor ticks are drawn. */
+	private boolean minorTickVisible;
+	/** Number of minor ticks between two major ticks. */
+	private int minorTicksCount;
+	/** Tick length relative to font height.*/
+	private double minorTickLength;
+	/** Stroke used to draw all minor ticks. */
+	// Property will be serialized using a wrapper
+	private transient Stroke minorTickStroke;
+	/** Minor tick alignment relative to the axis. */
+	private double minorTickAlignment;
+	/** Paint used to draw the shapes of minor ticks. */
+	private Paint minorTickColor;
+
+	/** Custom labels containing their respective position and text. */
+	private final Map<Double, String> customTicks;
+	/** Label text of the axis. */
+	private Label label;
+	/** Distance relative to font height. */
+	private double labelDistance;
 
 	/**
 	 * Initializes a new instance with default settings.
 	 */
 	public AbstractAxisRenderer2D() {
-		addSettingsListener(this);
+		intersection = 0.0;
+		// The direction must defined as swapped before the shape is evaluated.
+		shapeDirectionSwapped = false;
+		shape = new Line2D.Double(0.0, 0.0, 1.0, 0.0);
+		evaluateShape(shape);
 
-		setSettingDefault(INTERSECTION, 0.0);
+		shapeVisible = true;
+		shapeNormalOrientationClockwise = false;
+		shapeStroke = new BasicStroke();
+		shapeColor = Color.BLACK;
 
-		// The direction must defined as swapped before SHAPE is constructed.
-		setSettingDefault(SHAPE_DIRECTION_SWAPPED, false);
-		setSettingDefault(SHAPE, new Line2D.Double(0.0, 0.0, 1.0, 0.0));
-		setSettingDefault(SHAPE_VISIBLE, true);
-		setSettingDefault(SHAPE_NORMAL_ORIENTATION_CLOCKWISE, false);
-		setSettingDefault(SHAPE_STROKE, new BasicStroke());
-		setSettingDefault(SHAPE_COLOR, Color.BLACK);
-		setSettingDefault(SHAPE_DIRECTION_SWAPPED, false);
+		ticksVisible = true;
+		tickSpacing = 0.0;
+		ticksAutoSpaced = false;
+		tickLength = 1.0;
+		tickStroke = new BasicStroke();
+		tickAlignment = 0.5;
+		tickFont = Font.decode(null);
+		tickColor = Color.BLACK;
 
-		setSettingDefault(TICKS, true);
-		setSettingDefault(TICKS_SPACING, 0.0);
-		setSettingDefault(TICKS_AUTO_SPACING, false);
-		setSettingDefault(TICKS_LENGTH, 1.0);
-		setSettingDefault(TICKS_STROKE, new BasicStroke());
-		setSettingDefault(TICKS_ALIGNMENT, 0.5);
-		setSettingDefault(TICKS_FONT, Font.decode(null));
-		setSettingDefault(TICKS_COLOR, Color.BLACK);
+		tickLabelsVisible = true;
+		tickLabelFormat = NumberFormat.getInstance();
+		tickLabelDistance = 1.0;
+		tickLabelsOutside = true;
+		tickLabelRotation = 0.0;
 
-		setSettingDefault(TICK_LABELS, true);
-		setSettingDefault(TICK_LABELS_FORMAT, NumberFormat.getInstance());
-		setSettingDefault(TICK_LABELS_DISTANCE, 1.0);
-		setSettingDefault(TICK_LABELS_OUTSIDE, true);
-		setSettingDefault(TICK_LABELS_ROTATION, 0.0);
+		customTicks = new HashMap<>();
 
-		setSettingDefault(TICKS_CUSTOM, null);
+		minorTickVisible = true;
+		minorTicksCount = 1;
+		minorTickLength = 0.5;
+		minorTickStroke = new BasicStroke();
+		minorTickAlignment = 0.5;
+		minorTickColor = Color.BLACK;
 
-		setSettingDefault(TICKS_MINOR, true);
-		setSettingDefault(TICKS_MINOR_COUNT, 1);
-		setSettingDefault(TICKS_MINOR_LENGTH, 0.5);
-		setSettingDefault(TICKS_MINOR_STROKE, new BasicStroke());
-		setSettingDefault(TICKS_MINOR_ALIGNMENT, 0.5);
-		setSettingDefault(TICKS_MINOR_COLOR, Color.BLACK);
-
-		setSettingDefault(LABEL, null);
-		setSettingDefault(LABEL_DISTANCE, 1.0);
-		setSettingDefault(LABEL_ROTATION, 0.0);
-		setSettingDefault(LABEL_FONT, Font.decode(null));
-		setSettingDefault(LABEL_COLOR, Color.BLACK);
+		label = new Label();
+		labelDistance = 1.0;
 	}
 
 	/**
@@ -136,9 +196,9 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 	 * @see Axis
 	 */
 	public Drawable getRendererComponent(final Axis axis) {
-		final Drawable component = new AbstractDrawable() {
+		return new AbstractDrawable() {
 			/** Version id for serialization. */
-			private static final long serialVersionUID = 3605211198378801694L;
+			private static final long serialVersionUID1 = 3605211198378801694L;
 
 			/**
 			 * Draws the {@code Drawable} with the specified drawing context.
@@ -159,38 +219,30 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 				Paint paintOld = graphics.getPaint();
 
 				// Draw axis shape
-				Paint axisPaint = renderer.getSetting(SHAPE_COLOR);
-				Stroke axisStroke = renderer.getSetting(SHAPE_STROKE);
-				boolean isShapeVisible =
-					renderer.<Boolean>getSetting(SHAPE_VISIBLE);
+				Paint axisPaint = renderer.getShapeColor();
+				Stroke axisStroke = renderer.getShapeStroke();
+				boolean isShapeVisible = renderer.isShapeVisible();
 				if (isShapeVisible) {
-					Shape shape = renderer.getSetting(SHAPE);
+					Shape shape1 = renderer.getShape();
 					GraphicsUtils.drawPaintedShape(
-							graphics, shape, axisPaint, null, axisStroke);
+							graphics, shape1, axisPaint, null, axisStroke);
 				}
 
 				double fontSize =
-					renderer.<Font>getSetting(TICKS_FONT).getSize2D();
+					renderer.getTickFont().getSize2D();
 
 				// Draw ticks
-				boolean drawTicksMajor =
-					renderer.<Boolean>getSetting(TICKS);
-				boolean drawTicksMinor =
-					renderer.<Boolean>getSetting(TICKS_MINOR);
+				boolean drawTicksMajor = renderer.isTicksVisible();
+				boolean drawTicksMinor = renderer.isMinorTicksVisible();
 				if (drawTicksMajor || (drawTicksMajor && drawTicksMinor)) {
 					// Calculate tick positions (in pixel coordinates)
 					List<Tick> ticks = getTicks(axis);
 
 					boolean isTickLabelVisible =
-						renderer.<Boolean>getSetting(TICK_LABELS);
-					boolean isTickLabelOutside =
-						renderer.<Boolean>getSetting(TICK_LABELS_OUTSIDE);
-					double tickLabelRotation =
-						renderer.<Number>getSetting(TICK_LABELS_ROTATION)
-						.doubleValue();
-					double tickLabelDist =
-						renderer.<Number>getSetting(TICK_LABELS_DISTANCE)
-						.doubleValue()*fontSize;
+						renderer.isTickLabelsVisible();
+					boolean isTickLabelOutside = renderer.isTickLabelsOutside();
+					double tickLabelRotation1 = renderer.getTickLabelRotation();
+					double tickLabelDist = renderer.getTickLabelDistanceAbsolute();
 					Line2D tickShape = new Line2D.Double();
 
 					for (Tick tick : ticks) {
@@ -202,36 +254,25 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 						Point2D tickPoint = tick.position.getPoint2D();
 						Point2D tickNormal = tick.normal.getPoint2D();
 
-						double tickLength;
-						double tickAlignment;
+						double tickLength1;
+						double tickAlignment1;
 						Paint tickPaint;
-						Stroke tickStroke;
+						Stroke tickStroke1;
 						if (TickType.MINOR.equals(tick.type)) {
-							tickLength =
-								renderer.<Number>getSetting(TICKS_MINOR_LENGTH)
-								.doubleValue()*fontSize;
-							tickAlignment =
-								renderer.<Number>getSetting(TICKS_MINOR_ALIGNMENT)
-								.doubleValue();
-							tickPaint =
-								renderer.<Paint>getSetting(TICKS_MINOR_COLOR);
-							tickStroke =
-								renderer.<Stroke>getSetting(TICKS_MINOR_STROKE);
+							tickLength1 = renderer.getTickMinorLengthAbsolute();
+							tickAlignment1 = renderer.getMinorTickAlignment();
+							tickPaint = renderer.getMinorTickColor();
+							tickStroke1 = renderer.getMinorTickStroke();
 						} else {
-							tickLength =
-								renderer.<Number>getSetting(TICKS_LENGTH)
-								.doubleValue()*fontSize;
-							tickAlignment =
-								renderer.<Number>getSetting(TICKS_ALIGNMENT)
-								.doubleValue();
+							tickLength1 = getTickLengthAbsolute();
+							tickAlignment1 = renderer.getTickAlignment();
 							tickPaint =
-								renderer.<Paint>getSetting(TICKS_COLOR);
-							tickStroke =
-								renderer.<Stroke>getSetting(TICKS_STROKE);
+								renderer.getTickColor();
+							tickStroke1 = renderer.getTickStroke();
 						}
 
-						double tickLengthInner = tickLength*tickAlignment;
-						double tickLengthOuter = tickLength*(1.0 - tickAlignment);
+						double tickLengthInner = tickLength1*tickAlignment1;
+						double tickLengthOuter = tickLength1*(1.0 - tickAlignment1);
 
 						if ((drawTicksMajor && (tick.type == TickType.MAJOR) ||
 								tick.type == TickType.CUSTOM) || (drawTicksMinor &&
@@ -243,7 +284,7 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 								tickPoint.getY() + tickNormal.getY()*tickLengthOuter
 							);
 							GraphicsUtils.drawPaintedShape(
-									graphics, tickShape, tickPaint, null, tickStroke);
+									graphics, tickShape, tickPaint, null, tickStroke1);
 						}
 
 						// Draw label
@@ -252,13 +293,12 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 							String tickLabelText = tick.label;
 							if (tickLabelText != null && !tickLabelText.trim().isEmpty()) {
 								Label tickLabel = new Label(tickLabelText);
-								tickLabel.setSetting(Label.FONT,
-										renderer.<Font>getSetting(TICKS_FONT));
+								tickLabel.setFont(renderer.getTickFont());
 								// TODO Allow separate colors for ticks and tick labels?
-								tickLabel.setSetting(Label.COLOR, tickPaint);
+								tickLabel.setColor(tickPaint);
 								double labelDist = tickLengthOuter + tickLabelDist;
 								layoutLabel(tickLabel, tickPoint, tickNormal,
-										labelDist, isTickLabelOutside, tickLabelRotation);
+										labelDist, isTickLabelOutside, tickLabelRotation1);
 								tickLabel.draw(context);
 							}
 						}
@@ -266,31 +306,19 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 				}
 
 				// Draw axis label
-				String labelText = renderer.<String>getSetting(LABEL);
-				if (labelText != null && !labelText.trim().isEmpty()) {
-					Label axisLabel = new Label(labelText);
-					axisLabel.setSetting(Label.FONT,
-							renderer.<Font>getSetting(LABEL_FONT));
-					axisLabel.setSetting(Label.COLOR,
-							renderer.<Paint>getSetting(LABEL_COLOR));
+				Label axisLabel = renderer.getLabel();
+				if (axisLabel != null && !axisLabel.getText().trim().isEmpty()) {
+					double tickLength1 = getTickLengthAbsolute();
+					double tickAlignment1 = renderer.getTickAlignment();
+					double tickLengthOuter = tickLength1*(1.0 - tickAlignment1);
+					double tickLabelDistance1 = renderer.getTickLabelDistanceAbsolute();
 
-					double tickLength = renderer.<Number>getSetting(TICKS_LENGTH)
-						.doubleValue()*fontSize;
-					double tickAlignment = renderer.<Number>getSetting(TICKS_ALIGNMENT)
-						.doubleValue();
-					double tickLengthOuter = tickLength*(1.0 - tickAlignment);
-					double tickLabelDist = renderer.<Number>getSetting(TICK_LABELS_DISTANCE)
-						.doubleValue()*fontSize;
-
-					double labelDistance = renderer.<Number>getSetting(LABEL_DISTANCE)
-						.doubleValue()*fontSize;
+					double labelDistance1 = renderer.getLabelDistance()*fontSize;
 					double labelDist =
-						tickLengthOuter + tickLabelDist + fontSize + labelDistance;
-					double labelRotation = renderer.<Number>getSetting(LABEL_ROTATION)
-						.doubleValue();
+						tickLengthOuter + tickLabelDistance1 + fontSize + labelDistance1;
 					double axisLabelPos =
 						(axis.getMin().doubleValue() + axis.getMax().doubleValue()) * 0.5;
-					boolean isTickLabelOutside = renderer.<Boolean>getSetting(TICK_LABELS_OUTSIDE);
+					boolean isTickLabelOutside = renderer.isTickLabelsOutside();
 
 					PointND<Double> labelPos = getPosition(axis, axisLabelPos, false, true);
 					PointND<Double> labelNormal = getNormal(axis, axisLabelPos, false, true);
@@ -298,7 +326,7 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 					if (labelPos != null && labelNormal != null) {
 						layoutLabel(axisLabel, labelPos.getPoint2D(),
 								labelNormal.getPoint2D(), labelDist,
-								isTickLabelOutside, labelRotation);
+								isTickLabelOutside, axisLabel.getRotation());
 						axisLabel.draw(context);
 					}
 				}
@@ -308,15 +336,15 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 				graphics.setTransform(txOrig);
 			}
 
-			private void layoutLabel(Label label, Point2D labelPos, Point2D labelNormal,
-					double labelDist, boolean isLabelOutside, double rotation) {
-				Rectangle2D labelSize = label.getTextRectangle();
+			private void layoutLabel(Label label1, Point2D labelPos, Point2D labelNormal,
+									 double labelDist, boolean isLabelOutside, double rotation) {
+				Rectangle2D labelSize = label1.getTextRectangle();
 				Shape marginShape = new Rectangle2D.Double(
 					0, 0,
 					labelSize.getWidth() + 2.0*labelDist, labelSize.getHeight() + 2.0*labelDist
 				);
 				Rectangle2D marginBounds = marginShape.getBounds2D();
-				label.setSetting(Label.ROTATION, rotation);
+				label1.setRotation(rotation);
 				if ((rotation%360.0) != 0.0) {
 					marginShape = AffineTransform.getRotateInstance(
 						Math.toRadians(-rotation),
@@ -345,28 +373,22 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 					double posX = labelPos.getX() - intersX - labelSize.getWidth()/2.0;
 					double posY = labelPos.getY() - intersY - labelSize.getHeight()/2.0;
 
-					label.setBounds(posX, posY, labelSize.getWidth(), labelSize.getHeight());
+					label1.setBounds(posX, posY, labelSize.getWidth(), labelSize.getHeight());
 				}
 			}
 
 			@Override
 			public Dimension2D getPreferredSize() {
 				AbstractAxisRenderer2D renderer = AbstractAxisRenderer2D.this;
-				double fontSize = renderer.<Font>getSetting(TICKS_FONT).getSize2D();
-				double tickLength = renderer.<Number>getSetting(TICKS_LENGTH)
-					.doubleValue()*fontSize;
-				double tickAlignment = renderer.<Number>getSetting(TICKS_ALIGNMENT)
-					.doubleValue();
-				double tickLengthOuter = tickLength*(1.0 - tickAlignment);
-				double labelDistance = renderer.<Number>getSetting(TICK_LABELS_DISTANCE)
-					.doubleValue();
-				double labelDist = labelDistance*fontSize + tickLengthOuter;
-				double minSize = fontSize + labelDist + tickLengthOuter;
-				return new de.erichseifert.gral.util.Dimension2D.Double(minSize, minSize);
+				double fontSize = renderer.getTickFont().getSize2D();
+				double tickLength1 = getTickLengthAbsolute();
+				double tickAlignment1 = renderer.getTickAlignment();
+				double tickLengthOuter = tickLength1*(1.0 - tickAlignment1);
+				double labelDistance1 = renderer.getTickLabelDistanceAbsolute() + tickLengthOuter;
+				double minSize = fontSize + labelDistance1 + tickLengthOuter;
+				return new de.erichseifert.gral.graphics.Dimension2D.Double(minSize, minSize);
 			}
 		};
-
-		return component;
 	}
 
 	/**
@@ -375,7 +397,7 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 	 * @return A list of {@code Tick} instances
 	 */
 	public List<Tick> getTicks(Axis axis) {
-		List<Tick> ticks = new LinkedList<Tick>();
+		List<Tick> ticks = new LinkedList<>();
 
 		if (!axis.isValid()) {
 			return ticks;
@@ -384,14 +406,14 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 		double min = axis.getMin().doubleValue();
 		double max = axis.getMax().doubleValue();
 
-		Set<Double> tickPositions = new HashSet<Double>();
+		Set<Double> tickPositions = new HashSet<>();
 
 		createTicksCustom(ticks, axis, min, max, tickPositions);
 
-		boolean isAutoSpacing = this.<Boolean>getSetting(TICKS_AUTO_SPACING);
+		boolean isAutoSpacing = isTicksAutoSpaced();
 		// If the spacing is invalid, use auto spacing
 		if (!isAutoSpacing) {
-			Number tickSpacing = this.<Number>getSetting(TICKS_SPACING);
+			Number tickSpacing = getTickSpacing();
 			if (tickSpacing == null) {
 				isAutoSpacing = true;
 			} else {
@@ -405,6 +427,33 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 		createTicks(ticks, axis, min, max, tickPositions, isAutoSpacing);
 
 		return ticks;
+	}
+
+	/**
+	 * Returns the absolute length of a major tick.
+	 * @return Major tick length in pixels.
+	 */
+	protected double getTickLengthAbsolute() {
+		double fontSize = getTickFont().getSize2D();
+		return getTickLength()*fontSize;
+	}
+
+	/**
+	 * Returns the absolute length of a minor tick.
+	 * @return Minor tick length in pixels.
+	 */
+	protected double getTickMinorLengthAbsolute() {
+		double fontSize = getTickFont().getSize2D();
+		return getMinorTickLength()*fontSize;
+	}
+
+	/**
+	 * Returns the absolute distance between ticks and labels.
+	 * @return Distance in pixels.
+	 */
+	protected double getTickLabelDistanceAbsolute() {
+		double fontSize = getTickFont().getSize2D();
+		return getTickLabelDistance()*fontSize;
 	}
 
 	/**
@@ -430,7 +479,7 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 	 */
 	protected void createTicksCustom(List<Tick> ticks, Axis axis,
 			double min, double max, Set<Double> tickPositions) {
-		Map<? extends Number, String> labelsCustom = getSetting(TICKS_CUSTOM);
+		Map<? extends Number, String> labelsCustom = getCustomTicks();
 		if (labelsCustom != null) {
 			for (Number tickPositionWorldObj : labelsCustom.keySet()) {
 				double tickPositionWorld = tickPositionWorldObj.doubleValue();
@@ -462,11 +511,11 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 
 		// Retrieve tick label
 		String tickLabel;
-		Map<Number, String> labelsCustom = getSetting(TICKS_CUSTOM);
+		Map<Double, String> labelsCustom = getCustomTicks();
 		if (labelsCustom != null && labelsCustom.containsKey(tickPositionWorld)) {
 			tickLabel = labelsCustom.get(tickPositionWorld);
 		} else {
-			Format labelFormat = getSetting(TICK_LABELS_FORMAT);
+			Format labelFormat = getTickLabelFormat();
 			if (labelFormat != null) {
 				tickLabel = labelFormat.format(tickPositionWorld);
 			} else {
@@ -474,8 +523,7 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 			}
 		}
 
-		Tick tick = new Tick(type, tickPoint, tickNormal, null, null, tickLabel);
-		return tick;
+		return new Tick(type, tickPoint, tickNormal, null, null, tickLabel);
 	}
 
 	/**
@@ -498,23 +546,22 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 			valueView = worldToView(axis, value, extrapolate);
 		}
 
-		int segmentIndex = MathUtils.binarySearchFloor(shapeLengths, valueView);
+		int segmentIndex = MathUtils.binarySearchFloor(shapeSegmentLengthsAccumulated, valueView);
 		if (segmentIndex < 0 || segmentIndex >= shapeLines.length) {
 			return null;
 		}
 
 		segmentIndex = MathUtils.limit(
 				segmentIndex, 0, shapeLineNormals.length - 1);
-		Boolean normalOrientationClockwise = AbstractAxisRenderer2D.this
-			.getSetting(SHAPE_NORMAL_ORIENTATION_CLOCKWISE);
-		double normalOrientation = (normalOrientationClockwise != null &&
-				normalOrientationClockwise.booleanValue()) ? 1.0 : -1.0;
-		PointND<Double> tickNormal = new PointND<Double>(
-			normalOrientation * shapeLineNormals[segmentIndex].getX(),
-			normalOrientation * shapeLineNormals[segmentIndex].getY()
-		);
+		boolean normalOrientationClockwise = AbstractAxisRenderer2D.this
+			.isShapeNormalOrientationClockwise();
+		double normalOrientation =
+				normalOrientationClockwise ? 1.0 : -1.0;
 
-		return tickNormal;
+		return new PointND<>(
+				normalOrientation*shapeLineNormals[segmentIndex].getX(),
+				normalOrientation*shapeLineNormals[segmentIndex].getY()
+		);
 	}
 
 	/**
@@ -522,10 +569,10 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 	 * @return Shape length.
 	 */
 	protected double getShapeLength() {
-		if (shapeLengths == null || shapeLengths.length == 0) {
+		if (shapeSegmentLengthsAccumulated == null || shapeSegmentLengthsAccumulated.length == 0) {
 			return 0.0;
 		}
-		return shapeLengths[shapeLengths.length - 1];
+		return shapeSegmentLengthsAccumulated[shapeSegmentLengthsAccumulated.length - 1];
 	}
 
 	/**
@@ -544,75 +591,66 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 			return null;
 		}
 
-		double valueView;
-		if (forceLinear) {
-			valueView = (value.doubleValue() - axis.getMin().doubleValue()) /
-				axis.getRange()*getShapeLength();
-		} else {
-			valueView = worldToView(axis, value, extrapolate);
+		// Determine relative position of the value
+		double relativePositionOnShapePath = axis.getPosition(value).doubleValue();
+		if (!extrapolate) {
+			relativePositionOnShapePath = MathUtils.limit(relativePositionOnShapePath, 0.0, 1.0);
 		}
 
-		if (Double.isNaN(valueView)) {
+		// Determine absolute position of the value
+		double positionOnShapePath;
+		if (forceLinear) {
+			positionOnShapePath = relativePositionOnShapePath*getShapeLength();
+		} else {
+			positionOnShapePath = worldToView(axis, value, extrapolate);
+		}
+
+		if (Double.isNaN(positionOnShapePath)) {
 			return null;
 		}
 
 		// TODO Check if this is a valid way to allow infinite values
-		if (valueView == Double.NEGATIVE_INFINITY) {
-			valueView = 0.0;
-		} else if (valueView == Double.POSITIVE_INFINITY) {
-			valueView = getShapeLength();
+		if (positionOnShapePath == Double.NEGATIVE_INFINITY) {
+			positionOnShapePath = 0.0;
+		} else if (positionOnShapePath == Double.POSITIVE_INFINITY) {
+			positionOnShapePath = 1.0;
 		}
 
-		if (valueView <= 0.0 || valueView >= getShapeLength()) {
-			if (extrapolate) {
-				// do linear extrapolation if point lies outside of shape
-				int segmentIndex = (valueView <= 0.0) ? 0 : shapeLines.length - 1;
-				Line2D segment = shapeLines[segmentIndex];
-				double segmentLen = shapeSegmentLengths[segmentIndex];
-				double shapeLen = shapeLengths[segmentIndex];
-				double relLen = (valueView - shapeLen)/segmentLen;
-				return new PointND<Double>(
-					segment.getX1() + (segment.getX2() - segment.getX1())*relLen,
-					segment.getY1() + (segment.getY2() - segment.getY1())*relLen
-				);
-			} else {
-				if (valueView <= 0.0) {
-					Point2D p2d = shapeLines[0].getP1();
-					return new PointND<Double>(p2d.getX(), p2d.getY());
-				} else {
-					Point2D p2d = shapeLines[shapeLines.length - 1].getP2();
-					return new PointND<Double>(p2d.getX(), p2d.getY());
-				}
-			}
+		// Determine shape segment
+		int segmentIndex;
+		if (relativePositionOnShapePath <= 0.0) {
+				segmentIndex = 0;
+		} else if (relativePositionOnShapePath >= 1.0) {
+				segmentIndex = shapeLines.length - 1;
+		} else {
+			// Determine to which segment the value belongs using a binary search
+			segmentIndex = MathUtils.binarySearchFloor(shapeSegmentLengthsAccumulated, positionOnShapePath);
 		}
 
-		// Determine to which segment the value belongs using a binary search
-		int i = MathUtils.binarySearchFloor(shapeLengths, valueView);
-
-		if (i < 0 || i >= shapeLines.length) {
+		if (segmentIndex < 0 || segmentIndex >= shapeLines.length) {
 			return null;
 		}
-		Line2D line = shapeLines[i];
 
-		double posRel = (valueView - shapeLengths[i]) / shapeSegmentLengths[i];
-		PointND<Double> pos = new PointND<Double>(
-			line.getX1() + (line.getX2() - line.getX1())*posRel,
-			line.getY1() + (line.getY2() - line.getY1())*posRel
-		);
-		return pos;
+		// Compute actual position of the value in view coordinates
+		Line2D segment = shapeLines[segmentIndex];
+		double segmentLen = shapeSegmentLengths[segmentIndex];
+		double segmentLenAcc = shapeSegmentLengthsAccumulated[segmentIndex];
+		double relLen = (positionOnShapePath - segmentLenAcc)/segmentLen;
+		double x = segment.getX1() + (segment.getX2() - segment.getX1())*relLen;
+		double y = segment.getY1() + (segment.getY2() - segment.getY1())*relLen;
+		return new PointND<>(x, y);
 	}
 
 	/**
 	 * Calculates important aspects of the specified shape.
 	 * @param shape Shape to be evaluated.
 	 */
-	protected void evaluateShape(Shape shape) {
-		boolean directionSwapped =
-			this.<Boolean>getSetting(SHAPE_DIRECTION_SWAPPED);
+	protected final void evaluateShape(Shape shape) {
+		boolean directionSwapped = isShapeDirectionSwapped();
 		shapeLines = GeometryUtils.shapeToLines(shape, directionSwapped);
 		shapeSegmentLengths = new double[shapeLines.length];
 		// First length is always 0.0, last length is the total length
-		shapeLengths = new double[shapeLines.length + 1];
+		shapeSegmentLengthsAccumulated = new double[shapeLines.length + 1];
 		shapeLineNormals = new Point2D[shapeLines.length];
 
 		if (shapeLines.length == 0) {
@@ -625,7 +663,7 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 			// Calculate length of axis shape at each shape segment
 			double segmentLength = line.getP1().distance(line.getP2());
 			shapeSegmentLengths[i] = segmentLength;
-			shapeLengths[i + 1] = shapeLengths[i] + segmentLength;
+			shapeSegmentLengthsAccumulated[i + 1] = shapeSegmentLengthsAccumulated[i] + segmentLength;
 
 			// Calculate a normalized vector perpendicular to the current
 			// axis shape segment
@@ -633,17 +671,6 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 				 (line.getY2() - line.getY1()) / segmentLength,
 				-(line.getX2() - line.getX1()) / segmentLength
 			);
-		}
-	}
-
-	/**
-	 * Invoked if a setting has changed.
-	 * @param event Event containing information about the changed setting.
-	 */
-	public void settingChanged(SettingChangeEvent event) {
-		Key key = event.getKey();
-		if (SHAPE.equals(key)) {
-			evaluateShape((Shape) event.getValNew());
 		}
 	}
 
@@ -656,10 +683,312 @@ public abstract class AbstractAxisRenderer2D extends BasicSettingsStorage
 	 */
 	private void readObject(ObjectInputStream in)
 			throws ClassNotFoundException, IOException {
-		// Normal deserialization
+		// Default deserialization
 		in.defaultReadObject();
+		// Custom deserialization
+		shapeStroke = (Stroke) SerializationUtils.unwrap((Serializable) in.readObject());
+		tickStroke = (Stroke) SerializationUtils.unwrap((Serializable) in.readObject());
+		minorTickStroke = (Stroke) SerializationUtils.unwrap((Serializable) in.readObject());
+	}
 
-		// Restore listeners
-		addSettingsListener(this);
+	private void writeObject(ObjectOutputStream out) throws IOException {
+		// Default deserialization
+		out.defaultWriteObject();
+		// Custom serialization
+		out.writeObject(SerializationUtils.wrap(shapeStroke));
+		out.writeObject(SerializationUtils.wrap(tickStroke));
+		out.writeObject(SerializationUtils.wrap(minorTickStroke));
+	}
+
+	@Override
+	public Number getIntersection() {
+		return intersection;
+	}
+
+	@Override
+	public void setIntersection(Number intersection) {
+		this.intersection = intersection;
+	}
+
+	@Override
+	public Shape getShape() {
+		return shape;
+	}
+
+	@Override
+	public void setShape(Shape shape) {
+		this.shape = shape;
+		evaluateShape(shape);
+	}
+
+	@Override
+	public boolean isShapeVisible() {
+		return shapeVisible;
+	}
+
+	@Override
+	public void setShapeVisible(boolean shapeVisible) {
+		this.shapeVisible = shapeVisible;
+	}
+
+	@Override
+	public boolean isShapeNormalOrientationClockwise() {
+		return shapeNormalOrientationClockwise;
+	}
+
+	@Override
+	public void setShapeNormalOrientationClockwise(boolean clockwise) {
+		this.shapeNormalOrientationClockwise = clockwise;
+	}
+
+	@Override
+	public Paint getShapeColor() {
+		return shapeColor;
+	}
+
+	@Override
+	public void setShapeColor(Paint color) {
+		this.shapeColor = color;
+	}
+
+	@Override
+	public Stroke getShapeStroke() {
+		return shapeStroke;
+	}
+
+	@Override
+	public void setShapeStroke(Stroke stroke) {
+		this.shapeStroke = stroke;
+	}
+
+	@Override
+	public boolean isShapeDirectionSwapped() {
+		return shapeDirectionSwapped;
+	}
+
+	@Override
+	public void setShapeDirectionSwapped(boolean directionSwapped) {
+		this.shapeDirectionSwapped = directionSwapped;
+	}
+
+	@Override
+	public boolean isTicksVisible() {
+		return ticksVisible;
+	}
+
+	@Override
+	public void setTicksVisible(boolean ticksVisible) {
+		this.ticksVisible = ticksVisible;
+	}
+
+	@Override
+	public Number getTickSpacing() {
+		return tickSpacing;
+	}
+
+	@Override
+	public void setTickSpacing(Number spacing) {
+		this.tickSpacing = spacing;
+	}
+
+	@Override
+	public boolean isTicksAutoSpaced() {
+		return ticksAutoSpaced;
+	}
+
+	@Override
+	public void setTicksAutoSpaced(boolean autoSpaced) {
+		this.ticksAutoSpaced = autoSpaced;
+	}
+
+	@Override
+	public double getTickLength() {
+		return tickLength;
+	}
+
+	@Override
+	public void setTickLength(double length) {
+		this.tickLength = length;
+	}
+
+	@Override
+	public Stroke getTickStroke() {
+		return tickStroke;
+	}
+
+	@Override
+	public void setTickStroke(Stroke stroke) {
+		this.tickStroke = stroke;
+	}
+
+	@Override
+	public double getTickAlignment() {
+		return tickAlignment;
+	}
+
+	@Override
+	public void setTickAlignment(double alignment) {
+		this.tickAlignment = alignment;
+	}
+
+	@Override
+	public Font getTickFont() {
+		return tickFont;
+	}
+
+	@Override
+	public void setTickFont(Font font) {
+		this.tickFont = font;
+	}
+
+	@Override
+	public Paint getTickColor() {
+		return tickColor;
+	}
+
+	@Override
+	public void setTickColor(Paint color) {
+		this.tickColor = color;
+	}
+
+	@Override
+	public boolean isTickLabelsVisible() {
+		return tickLabelsVisible;
+	}
+
+	@Override
+	public void setTickLabelsVisible(boolean tickLabelsVisible) {
+		this.tickLabelsVisible = tickLabelsVisible;
+	}
+
+	@Override
+	public Format getTickLabelFormat() {
+		return tickLabelFormat;
+	}
+
+	@Override
+	public void setTickLabelFormat(Format format) {
+		this.tickLabelFormat = format;
+	}
+
+	@Override
+	public double getTickLabelDistance() {
+		return tickLabelDistance;
+	}
+
+	@Override
+	public void setTickLabelDistance(double distance) {
+		this.tickLabelDistance = distance;
+	}
+
+	@Override
+	public boolean isTickLabelsOutside() {
+		return tickLabelsOutside;
+	}
+
+	@Override
+	public void setTickLabelsOutside(boolean labelsOutside) {
+		this.tickLabelsOutside = labelsOutside;
+	}
+
+	@Override
+	public double getTickLabelRotation() {
+		return tickLabelRotation;
+	}
+
+	@Override
+	public void setTickLabelRotation(double angle) {
+		this.tickLabelRotation = angle;
+	}
+
+	@Override
+	public boolean isMinorTicksVisible() {
+		return minorTickVisible;
+	}
+
+	@Override
+	public void setMinorTicksVisible(boolean minorTicksVisible) {
+		this.minorTickVisible = minorTicksVisible;
+	}
+
+	@Override
+	public int getMinorTicksCount() {
+		return minorTicksCount;
+	}
+
+	@Override
+	public void setMinorTicksCount(int count) {
+		this.minorTicksCount = count;
+	}
+
+	@Override
+	public double getMinorTickLength() {
+		return minorTickLength;
+	}
+
+	@Override
+	public void setMinorTickLength(double length) {
+		this.minorTickLength = length;
+	}
+
+	@Override
+	public Stroke getMinorTickStroke() {
+		return minorTickStroke;
+	}
+
+	@Override
+	public void setMinorTickStroke(Stroke stroke) {
+		this.minorTickStroke = stroke;
+	}
+
+	@Override
+	public double getMinorTickAlignment() {
+		return minorTickAlignment;
+	}
+
+	@Override
+	public void setMinorTickAlignment(double alignment) {
+		this.minorTickAlignment = alignment;
+	}
+
+	@Override
+	public Paint getMinorTickColor() {
+		return minorTickColor;
+	}
+
+	@Override
+	public void setMinorTickColor(Paint color) {
+		this.minorTickColor = color;
+	}
+
+	@Override
+	public Map<Double, String> getCustomTicks() {
+		return Collections.unmodifiableMap(customTicks);
+	}
+
+	@Override
+	public void setCustomTicks(Map<Double, String> positionsAndLabels) {
+		customTicks.clear();
+		customTicks.putAll(positionsAndLabels);
+	}
+
+	@Override
+	public Label getLabel() {
+		return label;
+	}
+
+	@Override
+	public void setLabel(Label label) {
+		this.label = label;
+	}
+
+	@Override
+	public double getLabelDistance() {
+		return labelDistance;
+	}
+
+	@Override
+	public void setLabelDistance(double distance) {
+		this.labelDistance = distance;
 	}
 }

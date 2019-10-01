@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -22,18 +22,8 @@
 package de.erichseifert.gral.plots.areas;
 
 import java.awt.Color;
-import java.awt.Shape;
-import java.awt.geom.Area;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.util.List;
-
-import de.erichseifert.gral.plots.DataPoint;
-import de.erichseifert.gral.plots.settings.BasicSettingsStorage;
-import de.erichseifert.gral.plots.settings.SettingChangeEvent;
-import de.erichseifert.gral.plots.settings.SettingsListener;
-import de.erichseifert.gral.util.GeometryUtils;
-import de.erichseifert.gral.util.MathUtils;
+import java.awt.Paint;
+import java.io.Serializable;
 
 /**
  * <p>Abstract class that renders an area in two-dimensional space.</p>
@@ -43,70 +33,54 @@ import de.erichseifert.gral.util.MathUtils;
  *   <li>Administration of settings</li>
  * </ul>
  */
-public abstract class AbstractAreaRenderer extends BasicSettingsStorage
-		implements AreaRenderer, SettingsListener {
+public abstract class AbstractAreaRenderer implements AreaRenderer, Serializable {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = -9064749128190128428L;
+
+	/** Gap between points and the area. */
+	private double gap;
+	/** Decides whether the shape of the gap between points and the area is
+	 * rounded. */
+	private boolean gapRounded;
+	/** Paint to fill the area. */
+	private Paint color;
 
 	/**
 	 * Initializes a new instance with default settings.
 	 */
 	public AbstractAreaRenderer() {
-		addSettingsListener(this);
-
-		setSettingDefault(GAP, 0.0);
-		setSettingDefault(GAP_ROUNDED, false);
-		setSettingDefault(COLOR, Color.GRAY);
+		gap = 0.0;
+		gapRounded = false;
+		color = Color.GRAY;
 	}
 
-	/**
-	 * Returns the shape of an area from which the shapes of the specified
-	 * points are subtracted.
-	 * @param shape Shape of the area.
-	 * @param dataPoints Data points on the line.
-	 * @return Punched shape.
-	 */
-	protected Shape punch(Shape shape, List<DataPoint> dataPoints) {
-		Number sizeObj = this.<Number>getSetting(GAP);
-		if (!MathUtils.isCalculatable(sizeObj)) {
-			return shape;
-		}
-		double size = sizeObj.doubleValue();
-		if (size == 0.0) {
-			return shape;
-		}
-
-		boolean rounded = this.<Boolean>getSetting(GAP_ROUNDED);
-
-		// Subtract shapes of data points from the area to yield gaps.
-		Area punched = new Area(shape);
-		for (DataPoint p : dataPoints) {
-			punched = GeometryUtils.punch(punched, size, rounded,
-				p.position.getPoint2D(), p.shape);
-		}
-		return punched;
+	@Override
+	public double getGap() {
+		return gap;
 	}
 
-	/**
-	 * Invoked if a setting has changed.
-	 * @param event Event containing information about the changed setting.
-	 */
-	public void settingChanged(SettingChangeEvent event) {
+	@Override
+	public void setGap(double gap) {
+		this.gap = gap;
 	}
 
-	/**
-	 * Custom deserialization method.
-	 * @param in Input stream.
-	 * @throws ClassNotFoundException if a serialized class doesn't exist anymore.
-	 * @throws IOException if there is an error while reading data from the
-	 *         input stream.
-	 */
-	private void readObject(ObjectInputStream in)
-			throws ClassNotFoundException, IOException {
-		// Normal deserialization
-		in.defaultReadObject();
+	@Override
+	public boolean isGapRounded() {
+		return gapRounded;
+	}
 
-		// Restore listeners
-		addSettingsListener(this);
+	@Override
+	public void setGapRounded(boolean gapRounded) {
+		this.gapRounded = gapRounded;
+	}
+
+	@Override
+	public Paint getColor() {
+		return color;
+	}
+
+	@Override
+	public void setColor(Paint color) {
+		this.color = color;
 	}
 }

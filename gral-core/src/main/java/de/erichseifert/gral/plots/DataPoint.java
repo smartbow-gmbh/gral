@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,9 +21,6 @@
  */
 package de.erichseifert.gral.plots;
 
-import java.awt.Shape;
-
-import de.erichseifert.gral.graphics.Drawable;
 import de.erichseifert.gral.plots.points.PointData;
 import de.erichseifert.gral.util.PointND;
 
@@ -36,23 +33,15 @@ public class DataPoint {
 	public final PointData data;
 	/** Position of the data point (n-dimensional). */
 	public final PointND<Double> position;
-	/** Drawable that will be used to render the data point. */
-	public final Drawable drawable;
-	/** Shape describing the data point. */
-	public final Shape shape;
 
 	/**
 	 * Creates a new {@code DataPoint} object with the specified position,
 	 * {@code Drawable}, and shape.
 	 * @param data Data that this point was created from.
 	 * @param position Coordinates in view/screen units.
-	 * @param drawable Visual representation.
-	 * @param shape Geometric shape of the point.
 	 */
-	public DataPoint(PointData data, PointND<Double> position, Drawable drawable, Shape shape) {
+	public DataPoint(PointData data, PointND<Double> position) {
 		this.data = data;
 		this.position = position;
-		this.drawable = drawable;
-		this.shape = shape;
 	}
 }

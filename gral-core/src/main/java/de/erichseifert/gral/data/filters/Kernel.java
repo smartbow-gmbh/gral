@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -61,6 +61,51 @@ public class Kernel implements Serializable {
 	 */
 	public Kernel(double... values) {
 		this(values.length/2, values);
+	}
+
+	/**
+	 * Returns a Kernel of specified variance with binomial coefficients.
+	 * @param variance Variance.
+	 * @return Kernel.
+	 */
+	public static Kernel getBinomial(double variance) {
+		int size = (int) (variance * 4.0) + 1;
+		return getBinomial(size);
+	}
+
+	/**
+	 * Returns a Kernel of specified size with binomial coefficients.
+	 * @param size Size of the Kernel.
+	 * @return Kernel.
+	 */
+	public static Kernel getBinomial(int size) {
+		double[] values = new double[size];
+		values[0] = 1.0;
+		for (int i = 0; i < size - 1; i++) {
+			values[0] /= 2.0;
+		}
+
+		for (int i = 0; i < size; i++) {
+			for (int j = i; j > 0; j--) {
+				values[j] += values[j - 1];
+			}
+		}
+
+		return new Kernel(values);
+	}
+
+	/**
+	 * Returns a Kernel with the specified size and offset, filled with a
+	 * single value.
+	 * @param size Size.
+	 * @param offset Offset.
+	 * @param value Value the Kernel is filled with.
+	 * @return Kernel.
+	 */
+	public static Kernel getUniform(int size, int offset, double value) {
+		double[] values = new double[size];
+		Arrays.fill(values, value);
+		return new Kernel(offset, values);
 	}
 
 	/**

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -23,20 +23,16 @@ package de.erichseifert.gral.plots.lines;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Shape;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,6 +47,8 @@ import de.erichseifert.gral.plots.points.PointData;
 import de.erichseifert.gral.util.PointND;
 
 public class AbstractLineRendererTest {
+	private static final double DELTA = TestUtils.DELTA;
+
 	private PointData data;
 
 	private static class MockLineRenderer extends AbstractLineRenderer2D {
@@ -81,16 +79,16 @@ public class AbstractLineRendererTest {
 		data = new PointData(
 			Arrays.asList(axisX, axisY),
 			Arrays.asList(axisRendererX, axisRendererY),
-			null, 0);
+			null, 0, 0);
 	}
 
 	@Test
 	public void testCreate() {
 		LineRenderer r = new MockLineRenderer();
-		assertTrue(r.getSetting(LineRenderer.STROKE) instanceof BasicStroke);
-		assertEquals(0.0, r.getSetting(LineRenderer.GAP));
-		assertEquals(false, r.getSetting(LineRenderer.GAP_ROUNDED));
-		assertEquals(Color.BLACK, r.getSetting(LineRenderer.COLOR));
+		assertTrue(r.getStroke() instanceof BasicStroke);
+		assertEquals(0.0, r.getGap(), DELTA);
+		assertEquals(false, r.isGapRounded());
+		assertEquals(Color.BLACK, r.getColor());
 	}
 
 	@Test
@@ -98,8 +96,8 @@ public class AbstractLineRendererTest {
 		// Get line
 		LineRenderer r = new MockLineRenderer();
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data, new PointND<Double>(0.0, 0.0), null, null),
-			new DataPoint(data, new PointND<Double>(1.0, 1.0), null, null)
+			new DataPoint(data, new PointND<>(0.0, 0.0)),
+			new DataPoint(data, new PointND<>(1.0, 1.0))
 		);
 		Shape shape = r.getLineShape(points);
 		Drawable line = r.getLine(points, shape);
@@ -107,47 +105,29 @@ public class AbstractLineRendererTest {
 	}
 
 	@Test
-	public void testSettings() {
-		// Get
-		LineRenderer r = new MockLineRenderer();
-		assertEquals(Color.BLACK, r.getSetting(LineRenderer.COLOR));
-		// Set
-		r.setSetting(LineRenderer.COLOR, Color.RED);
-		assertEquals(Color.RED, r.getSetting(LineRenderer.COLOR));
-		// Remove
-		r.removeSetting(LineRenderer.COLOR);
-		assertEquals(Color.BLACK, r.getSetting(LineRenderer.COLOR));
-	}
-
-	@Test
-	public void testPunch() {
-		MockLineRenderer r = new MockLineRenderer();
-
-		Shape line = new Line2D.Double(-1.0, -1.0, 2.0, 2.0);
-		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data, new PointND<Double>(0.0, 0.0), null,
-				new Ellipse2D.Double(-0.25, -0.25, 0.50, 0.50)),
-			new DataPoint(data, new PointND<Double>(1.0, 1.0), null,
-				new Ellipse2D.Double(-0.25, -0.25, 0.50, 0.50))
-		);
-
-		Shape punched = r.punch(line, points);
-		assertNotSame(line, punched);
-	}
-
-	@Test
-	public void testPunchNullLine() {
+	public void testStrokeNullLine() {
 		MockLineRenderer r = new MockLineRenderer();
 
 		List<DataPoint> points = Arrays.asList(
-			new DataPoint(data, new PointND<Double>(0.0, 0.0), null,
-				new Ellipse2D.Double(-0.25, -0.25, 0.50, 0.50)),
-			new DataPoint(data, new PointND<Double>(1.0, 1.0), null,
-				new Ellipse2D.Double(-0.25, -0.25, 0.50, 0.50))
+			new DataPoint(data, new PointND<>(0.0, 0.0)),
+			new DataPoint(data, new PointND<>(1.0, 1.0))
 		);
 
-		Shape punched = r.punch(null, points);
+		Shape punched = r.stroke(null);
 		assertNull(punched);
+	}
+
+	@Test
+	public void testProperties() {
+		Color color = Color.RED;
+		BasicStroke stroke = new BasicStroke(1.5f);
+
+		MockLineRenderer r = new MockLineRenderer();
+		r.setColor(color);
+		r.setStroke(stroke);
+
+		assertEquals(color, r.getColor());
+		assertEquals(stroke, r.getStroke());
 	}
 
 	@Test
@@ -155,6 +135,9 @@ public class AbstractLineRendererTest {
 		LineRenderer original = new MockLineRenderer();
 		LineRenderer deserialized = TestUtils.serializeAndDeserialize(original);
 
-		TestUtils.assertSettings(original, deserialized);
+		assertEquals(original.getStroke(), deserialized.getStroke());
+		assertEquals(original.getGap(), deserialized.getGap(), DELTA);
+		assertEquals(original.isGapRounded(), deserialized.isGapRounded());
+		assertEquals(original.getColor(), deserialized.getColor());
     }
 }

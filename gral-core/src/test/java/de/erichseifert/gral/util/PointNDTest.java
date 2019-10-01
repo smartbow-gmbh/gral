@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,34 +21,33 @@
  */
 package de.erichseifert.gral.util;
 
+import java.awt.geom.Point2D;
+import java.io.IOException;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.awt.geom.Point2D;
-import java.io.IOException;
-
+import de.erichseifert.gral.TestUtils;
 import org.junit.Test;
 
-import de.erichseifert.gral.TestUtils;
-
 public class PointNDTest {
-	public static final double DELTA = 1e-15;
+	public static final double DELTA = TestUtils.DELTA;
 
 	@Test
 	public void testCreate() {
 		PointND<Double> p;
 
 		// Constructor with Number[]
-		p = new PointND<Double>(1.0, 2.0, 3.0, 4.0);
+		p = new PointND<>(1.0, 2.0, 3.0, 4.0);
 		assertEquals(4, p.getDimensions());
 	}
 
 	@Test
 	public void testGet() {
 		Double[] coordinates = {1.0, 2.0, 3.0, 4.0};
-		PointND<Double> p = new PointND<Double>(coordinates);
+		PointND<Double> p = new PointND<>(coordinates);
 
 		for (int dim = 0; dim < coordinates.length; dim++) {
 			assertEquals(coordinates[dim], p.get(dim));
@@ -58,7 +57,7 @@ public class PointNDTest {
 	@Test
 	public void testSet() {
 		Double[] coordinates = {1.0, 2.0, 3.0, 4.0};
-		PointND<Double> p = new PointND<Double>(coordinates);
+		PointND<Double> p = new PointND<>(coordinates);
 
 		int dim = 1;
 		p.set(dim, 0.0);
@@ -81,32 +80,36 @@ public class PointNDTest {
 
 	@Test
 	public void testToString() {
-		PointND<Double> p = new PointND<Double>(1.0, 2.0);
+		PointND<Double> p = new PointND<>(1.0, 2.0);
 		assertEquals("de.erichseifert.gral.util.PointND[1.0, 2.0]", p.toString());
 	}
 
 	@Test
 	public void testEquality() {
-		PointND<Double> p1 = new PointND<Double>(1.0, 2.0);
-		PointND<Double> p2 = new PointND<Double>(1.0, 2.0);
-		PointND<Double> p3 = new PointND<Double>(1.0, 2.0, 3.0);
+		PointND<Double> p1 = new PointND<>(1.0, 2.0);
+		PointND<Double> p2 = new PointND<>(1.0, 2.0);
+		PointND<Double> p3 = new PointND<>(1.0, 2.0, 3.0);
+		PointND<Double> p4 = new PointND<>(1.0, 2.0, null);
 		// Equals
 		assertTrue(p1.equals(p2));
 		assertFalse(p1.equals(null));
 		assertFalse(p2.equals(null));
 		assertFalse(p1.equals(p3));
+		assertFalse(p3.equals(p1));
+		assertFalse(p4.equals(p3));
+		assertFalse(p3.equals(p4));
 		// Hash code
 		assertEquals(p1.hashCode(), p2.hashCode());
 	}
 
 	@Test
 	public void testPoint2D() {
-		PointND<Double> p4 = new PointND<Double>(1.0, 2.0, 3.0, 4.0);
+		PointND<Double> p4 = new PointND<>(1.0, 2.0, 3.0, 4.0);
 
 		assertEquals(new Point2D.Double(1.0, 2.0), p4.getPoint2D());
 		assertEquals(new Point2D.Double(2.0, 3.0), p4.getPoint2D(1, 2));
 
-		PointND<Double> p1 = new PointND<Double>(1.0);
+		PointND<Double> p1 = new PointND<>(1.0);
 		try {
 			p1.getPoint2D();
 			fail("Expected ArrayIndexOutOfBoundsException exception.");
@@ -116,7 +119,7 @@ public class PointNDTest {
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		PointND<Double> original = new PointND<Double>(1.0, 2.0, 3.0, 4.0);
+		PointND<Double> original = new PointND<>(1.0, 2.0, 3.0, 4.0);
 		PointND<Double> deserialized = TestUtils.serializeAndDeserialize(original);
 
 		assertEquals(original.getDimensions(), deserialized.getDimensions());

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -44,8 +44,6 @@ import de.erichseifert.gral.plots.colors.ContinuousColorMapper;
 import de.erichseifert.gral.plots.colors.Grayscale;
 import de.erichseifert.gral.plots.points.AbstractPointRenderer;
 import de.erichseifert.gral.plots.points.PointData;
-import de.erichseifert.gral.plots.settings.Key;
-import de.erichseifert.gral.plots.settings.SettingsStorage;
 import de.erichseifert.gral.util.GraphicsUtils;
 import de.erichseifert.gral.util.PointND;
 
@@ -76,63 +74,100 @@ public class RasterPlot extends XYPlot {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = 5844862286358250831L;
 
-	/** Key for specifying a {@link java.awt.geom.Point2D} instance which defines
-	the horizontal and vertical offset of the raster from the origin. */
-	public static final Key OFFSET =
-		new Key("rasterplot.offset"); //$NON-NLS-1$
-	/** Key for specifying a {@link java.awt.geom.Dimension2D} instance which
-	defines the horizontal and vertical distance of the raster pixels. */
-	public static final Key DISTANCE =
-		new Key("rasterplot.distance"); //$NON-NLS-1$
-	/** Key for specifying an instance of
-	{@link de.erichseifert.gral.plots.colors.ColorMapper} used for mapping the
-	pixel values to colors. */
-	public static final Key COLORS =
-		new Key("rasterplot.color"); //$NON-NLS-1$
+	/** Offset of the raster pixels to the origin. */
+	private final Point2D offset;
+	/** Size of the raster pixels. */
+	private final Dimension2D distance;
+	/** Color mapping to fill the raster pixels. */
+	private ColorMapper colors;
 
 	/**
-	 * Class that renders a box and its whiskers in a box-and-whisker plot.
+	 * Class that renders the grid points of a {@code RasterPlot}.
 	 */
 	protected static class RasterRenderer extends AbstractPointRenderer {
 		/** Version id for serialization. */
 		private static final long serialVersionUID = 1266585364126459761L;
 
-		/** Key for specifying the {@link Integer} which specifies the
-		index of the column that is used for the x coordinate of a point. */
-		public static final Key COLUMN_X =
-			new Key("rasterplot.columnX"); //$NON-NLS-1$
-		/** Key for specifying the {@link Integer} which specifies the
-		index of the column that is used for the y coordinate of a point. */
-		public static final Key COLUMN_Y =
-			new Key("rasterplot.columnY"); //$NON-NLS-1$
-		/** Key for specifying the {@link Integer} which specifies the
-		index of the column that is used for the value of a point. */
-		public static final Key COLUMN_VALUE =
-			new Key("rasterplot.columnValue"); //$NON-NLS-1$
-
 		/** Plot specific settings. */
-		private final SettingsStorage plotSettings;
+		private final RasterPlot plot;
+
+		/** Horizontal position of the current raster pixel. */
+		private int xColumn;
+		/** Vertical position of the current raster pixel. */
+		private int yColumn;
+		/** Value of the current raster pixel. */
+		private int valueColumn;
 
 		/**
 		 * Constructor that creates a new instance and initializes it with a
 		 * plot as data provider. The default columns for (x, y, value) are set
 		 * to (0, 1, 2)
-		 * @param plotSettings Plot specific settings.
+		 * @param plot Plot storing global settings.
 		 */
-		public RasterRenderer(SettingsStorage plotSettings) {
-			this.plotSettings = plotSettings;
-			setSettingDefault(COLUMN_X, 0);
-			setSettingDefault(COLUMN_Y, 1);
-			setSettingDefault(COLUMN_VALUE, 2);
+		public RasterRenderer(RasterPlot plot) {
+			this.plot = plot;
+			xColumn = 0;
+			yColumn = 1;
+			valueColumn = 2;
 		}
 
 		/**
-		 * Returns the graphical representation to be drawn for the specified data
-		 * value.
-		 * @param data Information on axes, renderers, and values.
-		 * @param shape Outline that describes the point's shape.
-		 * @return Component that can be used to draw the point
+		 * Returns the index of the column which is used for the x coordinate
+		 * of a point.
+		 * @return Index of the column for the x coordinate of a point.
 		 */
+		public int getXColumn() {
+			return xColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the x coordinate
+		 * of a point.
+		 * @param columnIndex Index of the column for the x coordinate of a point.
+		 */
+		public void setXColumn(int columnIndex) {
+			this.xColumn = columnIndex;
+		}
+
+		/**
+		 * Returns the index of the column which is used for the y coordinate
+		 * of a point.
+		 * @return Index of the column for the y coordinate of a point.
+		 */
+		public int getYColumn() {
+			return yColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the y coordinate
+		 * of a point.
+		 * @param columnIndex Index of the column for the y coordinate of a point.
+		 */
+		public void setYColumn(int columnIndex) {
+			this.yColumn = columnIndex;
+		}
+
+		/**
+		 * Returns the index of the column which is used for the value of a
+		 * point.
+		 * @return Index of the column for the value of a point.
+		 */
+		@Override
+		public int getValueColumn() {
+			return valueColumn;
+		}
+
+		/**
+		 * Sets the index of the column which will be used for the value of a
+		 * point.
+		 * @param columnIndex Index of the column for the value of a point.
+		 */
+		@Override
+		public void setValueColumn(int columnIndex) {
+			this.valueColumn = columnIndex;
+		}
+
+		@Override
 		public Drawable getPoint(final PointData data, final Shape shape) {
 			return new AbstractDrawable() {
 				/** Version id for serialization. */
@@ -147,15 +182,15 @@ public class RasterPlot extends XYPlot {
 					AxisRenderer axisYRenderer = data.axisRenderers.get(1);
 					Row row = data.row;
 
-					int colX = renderer.<Integer>getSetting(COLUMN_X);
+					int colX = renderer.getXColumn();
 					if (colX < 0 || colX >= row.size() || !row.isColumnNumeric(colX)) {
 						return;
 					}
-					int colY = renderer.<Integer>getSetting(COLUMN_Y);
+					int colY = renderer.getYColumn();
 					if (colY < 0 || colY >= row.size() || !row.isColumnNumeric(colY)) {
 						return;
 					}
-					int colValue = renderer.<Integer>getSetting(COLUMN_VALUE);
+					int colValue = renderer.getValueColumn();
 					if (colValue < 0 || colValue >= row.size() || !row.isColumnNumeric(colValue)) {
 						return;
 					}
@@ -190,7 +225,7 @@ public class RasterPlot extends XYPlot {
 
 					// Paint pixel
 					Graphics2D graphics = context.getGraphics();
-					ColorMapper colorMapper = plotSettings.getSetting(COLORS);
+					ColorMapper colorMapper = plot.getColors();
 					Paint paint;
 					if (colorMapper instanceof ContinuousColorMapper) {
 						paint = ((ContinuousColorMapper) colorMapper)
@@ -214,7 +249,25 @@ public class RasterPlot extends XYPlot {
 		 * @return Outline that describes the point's shape.
 		 */
 		public Shape getPointShape(PointData data) {
-			return getSetting(SHAPE);
+			return getShape();
+		}
+
+		/**
+		 * Returns a graphical representation of the value label to be drawn for
+		 * the specified data value.
+		 * @param data Information on axes, renderers, and values.
+		 * @param shape Outline that describes the bounds for the value label.
+		 * @return Component that can be used to draw the value label.
+		 */
+		public Drawable getValue(final PointData data, final Shape shape) {
+			return new AbstractDrawable() {
+				/** Version id for serialization. */
+				private static final long serialVersionUID1 = -8402945980942955359L;
+
+				public void draw(DrawingContext context) {
+					// TODO Implement rendering of value label
+				}
+			};
 		}
 	}
 
@@ -223,18 +276,16 @@ public class RasterPlot extends XYPlot {
 	 * @param data Data to be displayed.
 	 */
 	public RasterPlot(DataSource data) {
-		setSettingDefault(OFFSET, new Point2D.Double());
-		setSettingDefault(DISTANCE, new de.erichseifert.gral.util.Dimension2D.Double(1.0, 1.0));
-		setSettingDefault(COLORS, new Grayscale());
+		offset = new Point2D.Double();
+		distance = new de.erichseifert.gral.graphics.Dimension2D.Double(1.0, 1.0);
+		colors = new Grayscale();
 
-		getPlotArea().setSettingDefault(XYPlotArea2D.GRID_MAJOR_X, false);
-		getPlotArea().setSettingDefault(XYPlotArea2D.GRID_MAJOR_Y, false);
+		((XYPlotArea2D) getPlotArea()).setMajorGridX(false);
+		((XYPlotArea2D) getPlotArea()).setMajorGridY(false);
 		//getAxisRenderer(AXIS_X).setSetting(AxisRenderer.TICKS, false);
 		//getAxisRenderer(AXIS_Y).setSetting(AxisRenderer.TICKS, false);
-		getAxisRenderer(AXIS_X).setSetting(AxisRenderer.INTERSECTION,
-			-Double.MAX_VALUE);
-		getAxisRenderer(AXIS_Y).setSetting(AxisRenderer.INTERSECTION,
-			-Double.MAX_VALUE);
+		getAxisRenderer(AXIS_X).setIntersection(-Double.MAX_VALUE);
+		getAxisRenderer(AXIS_Y).setIntersection(-Double.MAX_VALUE);
 
 		// Store data
 		add(data);
@@ -246,21 +297,24 @@ public class RasterPlot extends XYPlot {
 	@Override
 	public void autoscaleAxis(String axisName) {
 		if (AXIS_X.equals(axisName) || AXIS_Y.equals(axisName)) {
-			Dimension2D dist = getSetting(DISTANCE);
+			Dimension2D dist = getDistance();
 			// In case we get called before settings defaults have been set,
 			// just set distance to a sane default
 			if (dist == null) {
-				dist = new de.erichseifert.gral.util.Dimension2D.Double(1.0, 1.0);
+				dist = new de.erichseifert.gral.graphics.Dimension2D.Double(1.0, 1.0);
 			}
 
+			Axis axis = getAxis(axisName);
+			if (axis == null || !axis.isAutoscaled()) {
+				return;
+			}
+
+			double min = getAxisMin(axisName);
+			double max = getAxisMax(axisName);
 			if (AXIS_X.equals(axisName)) {
-				double xMin = getAxisMin(AXIS_X);
-				double xMax = getAxisMax(AXIS_X);
-				getAxis(AXIS_X).setRange(xMin, xMax + dist.getWidth());
+				axis.setRange(min, max + dist.getWidth());
 			} else if (AXIS_Y.equals(axisName)) {
-				double yMin = getAxisMin(AXIS_Y);
-				double yMax = getAxisMax(AXIS_Y);
-				getAxis(AXIS_Y).setRange(yMin - dist.getHeight(), yMax);
+				axis.setRange(min - dist.getHeight(), max);
 			}
 		} else {
 			super.autoscaleAxis(axisName);
@@ -283,9 +337,10 @@ public class RasterPlot extends XYPlot {
 			new DataTable(Double.class, Double.class, Double.class);
 
 		// Generate pixel data with (x, y, value)
-		Statistics stats = data.getStatistics();
-		double min = stats.get(Statistics.MIN);
-		double max = stats.get(Statistics.MAX);
+		double min = ((Number) data.getRowStatistics(Statistics.MIN).
+				getColumnStatistics(Statistics.MIN).get(0, 0)).doubleValue();
+		double max = ((Number) data.getRowStatistics(Statistics.MAX).
+				getColumnStatistics(Statistics.MAX).get(0, 0)).doubleValue();
 		double range = max - min;
 		int i = 0;
 		for (Comparable<?> cell : data) {
@@ -311,7 +366,59 @@ public class RasterPlot extends XYPlot {
 		// Add data source
 		super.add(index, source, visible);
 		// Adjust rendering
-		setLineRenderer(source, null);
-		setPointRenderer(source, new RasterRenderer(this));
+		// FIXME: Overwrites possible present point and line renderers
+		setLineRenderers(source, null);
+		setPointRenderers(source, new RasterRenderer(this));
+	}
+
+	/**
+	 * Returns the horizontal and vertical offset of the raster from the
+	 * origin.
+	 * @return Horizontal and vertical offset of the raster from the origin.
+	 */
+	public Point2D getOffset() {
+		return offset;
+	}
+
+	/**
+	 * Sets the horizontal and vertical offset of the raster from the
+	 * origin.
+	 * @param offset Horizontal and vertical offset of the raster from the
+	 * origin.
+	 */
+	public void setOffset(Point2D offset) {
+		this.offset.setLocation(offset);
+	}
+
+	/**
+	 * Returns the horizontal and vertical distance of the raster elements.
+	 * @return Horizontal and vertical distance of the raster elements.
+	 */
+	public Dimension2D getDistance() {
+		return distance;
+	}
+
+	/**
+	 * Returns the horizontal and vertical distance of the raster elements.
+	 * @param distance Horizontal and vertical distance of the raster elements.
+	 */
+	public void setDistance(Dimension2D distance) {
+		this.distance.setSize(distance);
+	}
+
+	/**
+	 * Returns the object which is used to map pixel values to colors.
+	 * @return Object which is used to map pixel values to colors.
+	 */
+	public ColorMapper getColors() {
+		return colors;
+	}
+
+	/**
+	 * Sets the object which will be used to map pixel values to colors.
+	 * @param colors Object which will be used to map pixel values to colors.
+	 */
+	public void setColors(ColorMapper colors) {
+		this.colors = colors;
 	}
 }

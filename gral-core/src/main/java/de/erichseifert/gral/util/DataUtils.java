@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * Abstract class that contains utility functions for creating data structures
- * and for working with data sources.
+ * and for working with data sources and values.
  */
 public abstract class DataUtils {
 	/**
@@ -51,12 +51,27 @@ public abstract class DataUtils {
 				"Could not create the map because the number of keys and values differs.");
 		}
 		// Fill map with keys and values
-		Map<K, V> map = new HashMap<K, V>();
+		Map<K, V> map = new HashMap<>();
 		for (int i = 0; i < keys.length; i++) {
 			K key = keys[i];
 			V value = values[i];
 			map.put(key, value);
 		}
 		return map;
+	}
+
+	/**
+	 * Returns the double value of the {@code Number} object or the specified
+	 * default value if the object is {@code null}.
+	 * @param n Number object.
+	 * @param defaultValue Default value.
+	 * @return Double value of the {@code Number} object or the default value
+	 *         if the object is {@code null}
+	 */
+	public static double getValueOrDefault(Number n, double defaultValue) {
+		if (n == null) {
+			return defaultValue;
+		}
+		return n.doubleValue();
 	}
 }

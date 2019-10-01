@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -37,11 +37,7 @@ import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.List;
-import java.util.Map;
 
-import de.erichseifert.gral.plots.settings.Key;
-import de.erichseifert.gral.plots.settings.SettingsStorage;
-import de.erichseifert.gral.plots.settings.SettingsUtils;
 import de.erichseifert.gral.util.GeometryUtils;
 import de.erichseifert.gral.util.GeometryUtils.PathSegment;
 
@@ -53,7 +49,7 @@ public class TestUtils {
 	 * Creates a new writable image for running a unit test.
 	 * @return A writable image instance.
 	 */
-	public static final BufferedImage createTestImage() {
+	public static BufferedImage createTestImage() {
 		return new BufferedImage(40, 30, BufferedImage.TYPE_INT_ARGB);
 	}
 
@@ -64,7 +60,7 @@ public class TestUtils {
 	 * @param message Custom message.
 	 * @param image Image to test.
 	 */
-	public static final void assertEmpty(String message, BufferedImage image) {
+	public static void assertEmpty(String message, BufferedImage image) {
 		if (!isEmpty(image)) {
 			fail((String.valueOf(message) + " Image is not empty.").trim());
 		}
@@ -75,7 +71,7 @@ public class TestUtils {
 	 * it contains only transparent pixels (alpha &lt; 0).
 	 * @param image Image to test.
 	 */
-	public static final void assertEmpty(BufferedImage image) {
+	public static void assertEmpty(BufferedImage image) {
 		assertEmpty("", image);
 	}
 
@@ -86,7 +82,7 @@ public class TestUtils {
 	 * @param message Custom message.
 	 * @param image Image to test.
 	 */
-	public static final void assertNotEmpty(String message, BufferedImage image) {
+	public static void assertNotEmpty(String message, BufferedImage image) {
 		// An image without data is considered empty
 		assertTrue(image.getWidth() > 0);
 		assertTrue(image.getHeight() > 0);
@@ -115,8 +111,7 @@ public class TestUtils {
 		// Check whether there are non-transparent pixel values
 		DataBufferInt buf = (DataBufferInt) image.getRaster().getDataBuffer();
 		int[] data = buf.getData();
-		for (int i = 0; i < data.length; i++) {
-			int color = data[i];
+		for (int color : data) {
 			int alpha = color & 0xFF000000;
 			if (alpha != 0) {
 				return false;
@@ -131,7 +126,7 @@ public class TestUtils {
 	 * @param image1 First image.
 	 * @param image2 Second image.
 	 */
-	public static final void assertEquals(String message, BufferedImage image1, BufferedImage image2) {
+	public static void assertEquals(String message, BufferedImage image1, BufferedImage image2) {
 		if (!isEqual(image1, image2)) {
 			fail((String.valueOf(message) + " Image contents are different.").trim());
 		}
@@ -142,7 +137,7 @@ public class TestUtils {
 	 * @param image1 First image.
 	 * @param image2 Second image.
 	 */
-	public static final void assertEquals(BufferedImage image1, BufferedImage image2) {
+	public static void assertEquals(BufferedImage image1, BufferedImage image2) {
 		assertEquals("", image1, image2);
 	}
 
@@ -152,7 +147,7 @@ public class TestUtils {
 	 * @param image1 First image.
 	 * @param image2 Second image.
 	 */
-	public static final void assertNotEquals(String message, BufferedImage image1, BufferedImage image2) {
+	public static void assertNotEquals(String message, BufferedImage image1, BufferedImage image2) {
 		if (isEqual(image1, image2)) {
 			fail((String.valueOf(message) + " Image contents are identical.").trim());
 		}
@@ -163,7 +158,7 @@ public class TestUtils {
 	 * @param image1 First image.
 	 * @param image2 Second image.
 	 */
-	public static final void assertNotEquals(BufferedImage image1, BufferedImage image2) {
+	public static void assertNotEquals(BufferedImage image1, BufferedImage image2) {
 		assertNotEquals("", image1, image2);
 	}
 
@@ -201,13 +196,10 @@ public class TestUtils {
 			throws IOException, ClassNotFoundException {
 		// Serialize
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		ObjectOutputStream oos = new ObjectOutputStream(out);
-		try {
+		try (ObjectOutputStream oos = new ObjectOutputStream(out)) {
 			oos.writeObject(original);
-		} catch(NotSerializableException e) {
+		} catch (NotSerializableException e) {
 			e.printStackTrace();
-		} finally {
-			oos.close();
 		}
 		assertTrue("Serialization failed.", out.size() > 0);
 
@@ -224,21 +216,6 @@ public class TestUtils {
 	public static void assertEquals(String message, Line2D expected, Line2D actual) {
 		org.junit.Assert.assertEquals(message, expected.getP1(), actual.getP1());
 		org.junit.Assert.assertEquals(message, expected.getP2(), actual.getP2());
-	}
-
-	public static <T extends SettingsStorage> void assertSettings(T expected, T actual) {
-		Map<String, Key> keys = SettingsUtils.getKeys(expected.getClass());
-
-		for (Map.Entry<String, Key> entry : keys.entrySet()) {
-			String name = entry.getKey();
-			Key key = entry.getValue();
-
-			Object valueExpected = expected.getSetting(key);
-			Object valueActual = actual.getSetting(key);
-
-			assertSetting(String.format("Setting '%s' differs.", name),
-				valueExpected, valueActual);
-		}
 	}
 
 	public static <T> void assertSetting(String message, T expected, T actual) {
@@ -267,6 +244,29 @@ public class TestUtils {
 			}
 		} else {
 			org.junit.Assert.assertEquals(message, expected, actual);
+		}
+	}
+
+	public static void assertEquals(Line2D expected, Line2D actual) {
+		if (expected == null && actual == null) {
+			return;
+		}
+		if (expected != null && expected.equals(actual)) {
+			return;
+		}
+		if (expected == null || actual == null) {
+			fail();
+		}
+
+		org.junit.Assert.assertEquals(expected.getP1(), actual.getP1());
+		org.junit.Assert.assertEquals(expected.getP2(), actual.getP2());
+	}
+
+	public static void assertEquals(Shape expected, Shape actual) {
+		if (expected instanceof Line2D && actual instanceof Line2D) {
+			assertEquals((Line2D) expected, (Line2D) actual);
+		} else {
+			org.junit.Assert.assertEquals(expected, actual);
 		}
 	}
 }

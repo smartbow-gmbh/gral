@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -42,7 +42,7 @@ public class SortedList<T extends Comparable<T>> extends AbstractList<T> {
 	 * @param initialCapacity Initial capacity of the list.
 	 */
 	public SortedList(int initialCapacity) {
-		elements = new ArrayList<T>(initialCapacity);
+		elements = new ArrayList<>(initialCapacity);
 	}
 
 	/**
@@ -97,9 +97,7 @@ public class SortedList<T extends Comparable<T>> extends AbstractList<T> {
 	public int indexOf(Object o) {
 		try {
 			return Collections.binarySearch(elements, (T) o);
-		} catch (NullPointerException e) {
-			return -1;
-		} catch (ClassCastException e) {
+		} catch (NullPointerException | ClassCastException e) {
 			return -1;
 		}
 	}

@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 
 import de.erichseifert.gral.data.DataSource;
+import de.erichseifert.gral.util.DataUtils;
 import de.erichseifert.gral.util.MathUtils;
 
 /**
@@ -34,7 +35,7 @@ import de.erichseifert.gral.util.MathUtils;
  *   <li>Getting and setting the {@code Kernel} used for convolution</li>
  * </ul>
  */
-public class Convolution extends Filter {
+public class Convolution extends Filter2D {
 	/** Version id for serialization. */
 	private static final long serialVersionUID = 7155205321415314271L;
 
@@ -87,15 +88,13 @@ public class Convolution extends Filter {
 		Kernel kernel = getKernel();
 		if (kernel == null) {
 			Comparable<?> original = getOriginal(col, row);
-			Number originalNumber = (Number) original;
-			return (originalNumber != null) ? originalNumber.doubleValue() : Double.NaN;
+			return DataUtils.getValueOrDefault((Number) original, Double.NaN);
 		}
 		double sum = 0.0;
 		for (int k = kernel.getMinIndex(); k <= kernel.getMaxIndex(); k++) {
 			int r = row + k;
 			Comparable<?> original = getOriginal(col, r);
-			Number originalNumber = (Number) original;
-			double v = (originalNumber != null) ? originalNumber.doubleValue() : Double.NaN;
+			double v = DataUtils.getValueOrDefault((Number) original, Double.NaN);
 			if (!MathUtils.isCalculatable(v)) {
 				return v;
 			}

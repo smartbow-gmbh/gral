@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -21,12 +21,16 @@
  */
 package de.erichseifert.gral.data;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,9 +38,28 @@ import de.erichseifert.gral.TestUtils;
 import de.erichseifert.gral.data.comparators.Ascending;
 import de.erichseifert.gral.data.comparators.Descending;
 import de.erichseifert.gral.data.statistics.Statistics;
+import org.hamcrest.CoreMatchers;
 
 public class DataTableTest {
 	private static final double DELTA = TestUtils.DELTA;
+
+	private static class MockDataListener implements DataListener {
+		private DataChangeEvent[] added;
+		private DataChangeEvent[] updated;
+		private DataChangeEvent[] removed;
+
+		public void dataAdded(DataSource source, DataChangeEvent... events) {
+			added = events;
+		}
+
+		public void dataUpdated(DataSource source, DataChangeEvent... events) {
+			updated = events;
+		}
+
+		public void dataRemoved(DataSource source, DataChangeEvent... events) {
+			removed = events;
+		}
+	}
 
 	private DataTable table;
 
@@ -72,8 +95,8 @@ public class DataTableTest {
 		assertEquals(3, table2.getColumnCount());
 		assertEquals(0, table1.getRowCount());
 		Class<? extends Comparable<?>>[] types2 = table2.getColumnTypes();
-		for (int i = 0; i < types2.length; i++) {
-			assertEquals(Double.class, types2[i]);
+		for (Class<? extends Comparable<?>> aTypes2 : types2) {
+			assertEquals(Double.class, aTypes2);
 		}
 
 		// Copy constructor
@@ -87,12 +110,27 @@ public class DataTableTest {
 	}
 
 	@Test
+	public void testDataTableCreatedFromColumnsContainsValuesInColumnOrder() {
+		int someRowIndex = 1;
+		// TODO: Properly mock Column objects
+		DataSource firstColumnData = new DummyData(1, someRowIndex + 1, 1.0);
+		Column<?> firstColumn = firstColumnData.getColumn(0);
+		DataSource secondColumnData = new DummyData(1, someRowIndex + 1, 2.0);
+		Column<?> secondColumn = secondColumnData.getColumn(0);
+
+		DataSource table = new DataTable(firstColumn, secondColumn);
+
+		assertThat(table.getRecord(1), CoreMatchers.<Comparable<?>>hasItems(firstColumn.get(someRowIndex), secondColumn.get(someRowIndex)));
+	}
+
+	@Test
 	public void testAdd() {
 		int sizeBefore = table.getRowCount();
 		table.add(0, -1);
 		table.add(1, -2);
-		table.add(2, -3);
+		int rowIndex = table.add(2, -3);
 		assertEquals(sizeBefore + 3, table.getRowCount());
+		assertEquals(table.getRowCount() - 1, rowIndex);
 
 		// Wrong number of columns
 		try {
@@ -107,6 +145,35 @@ public class DataTableTest {
 			fail("Expected IllegalArgumentException exception.");
 		} catch (IllegalArgumentException e) {
 		}
+	}
+
+	@Test
+	public void testAddCollectionReturnsInsertedPosition() {
+		DataTable table = new DataTable();
+		table.add();
+		table.add();
+
+		int insertedPosition = table.add(Collections.<Comparable<?>>emptyList());
+
+		assertThat(insertedPosition, is(2));
+	}
+
+	@Test
+	public void testContainsARowAfterAddingARecord() {
+		DataTable table = new DataTable();
+		Record record = new Record();
+
+		table.add(record);
+
+		assertThat(table.getRowCount(), is(1));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testAddRecordThrowsExceptionIfColumnCountDoesNotMatch() {
+		DataTable table = new DataTable(String.class, Double.class);
+		Record record = new Record("1");
+
+		table.add(record);
 	}
 
 	@Test
@@ -211,6 +278,100 @@ public class DataTableTest {
 	}
 
 	@Test
+	public void testEventsAdd() {
+		table.add(12, 34);
+
+		MockDataListener listener = new MockDataListener();
+		table.addDataListener(listener);
+		assertNull(listener.added);
+		assertNull(listener.updated);
+		assertNull(listener.removed);
+
+		int row = table.add(56, 78);
+		assertNotNull(listener.added);
+		assertNull(listener.updated);
+		assertNull(listener.removed);
+
+		assertEquals(2, listener.added.length);
+		assertEquals(0, listener.added[0].getCol());
+		assertEquals(row, listener.added[0].getRow());
+		assertNull(listener.added[0].getOld());
+		assertEquals(56, listener.added[0].getNew());
+		assertEquals(1, listener.added[1].getCol());
+		assertEquals(row, listener.added[1].getRow());
+		assertNull(listener.added[1].getOld());
+		assertEquals(78, listener.added[1].getNew());
+	}
+
+	@Test
+	public void testEventsUpdate() {
+		int row = table.add(12, 34);
+
+		MockDataListener listener = new MockDataListener();
+		table.addDataListener(listener);
+		assertNull(listener.added);
+		assertNull(listener.updated);
+		assertNull(listener.removed);
+
+		Comparable<?> valueOld = table.set(1, row, 42);
+		assertNull(listener.added);
+		assertNotNull(listener.updated);
+		assertNull(listener.removed);
+
+		assertEquals(34, valueOld);
+
+		assertEquals(1, listener.updated.length);
+		assertEquals(1, listener.updated[0].getCol());
+		assertEquals(row, listener.updated[0].getRow());
+		assertEquals(34, listener.updated[0].getOld());
+		assertEquals(42, listener.updated[0].getNew());
+	}
+
+	@Test
+	public void testEventsRemove() {
+		int row = table.add(12, 34);
+
+		MockDataListener listener = new MockDataListener();
+		table.addDataListener(listener);
+		assertNull(listener.added);
+		assertNull(listener.updated);
+		assertNull(listener.removed);
+
+		table.remove(row);
+		assertNull(listener.added);
+		assertNull(listener.updated);
+		assertNotNull(listener.removed);
+
+		assertEquals(2, listener.removed.length);
+		assertEquals(0, listener.removed[0].getCol());
+		assertEquals(row, listener.removed[0].getRow());
+		assertEquals(12, listener.removed[0].getOld());
+		assertNull(listener.removed[0].getNew());
+		assertEquals(1, listener.removed[1].getCol());
+		assertEquals(row, listener.removed[1].getRow());
+		assertEquals(34, listener.removed[1].getOld());
+		assertNull(listener.removed[1].getNew());
+	}
+
+	@Test
+	public void testEventsClear() {
+		MockDataListener listener = new MockDataListener();
+		table.addDataListener(listener);
+		assertNull(listener.added);
+		assertNull(listener.updated);
+		assertNull(listener.removed);
+
+		int cols = table.getColumnCount();
+		int rows = table.getRowCount();
+		table.clear();
+		assertNull(listener.added);
+		assertNull(listener.updated);
+		assertNotNull(listener.removed);
+
+		assertEquals(cols * rows, listener.removed.length);
+	}
+
+	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
 		DataSource original = table;
 		DataSource deserialized = TestUtils.serializeAndDeserialize(original);
@@ -238,4 +399,10 @@ public class DataTableTest {
 				DELTA);
 		}
     }
+
+	@Test
+	public void testSetName() {
+		table.setName("name");
+		assertEquals("name", table.getName());
+	}
 }

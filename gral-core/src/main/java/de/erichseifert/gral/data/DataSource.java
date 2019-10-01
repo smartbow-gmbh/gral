@@ -1,8 +1,8 @@
 /*
  * GRAL: GRAphing Library for Java(R)
  *
- * (C) Copyright 2009-2012 Erich Seifert <dev[at]erichseifert.de>,
- * Michael Seifert <michael[at]erichseifert.de>
+ * (C) Copyright 2009-2019 Erich Seifert <dev[at]erichseifert.de>,
+ * Michael Seifert <mseifert[at]error-reports.org>
  *
  * This file is part of GRAL.
  *
@@ -34,7 +34,9 @@ public interface DataSource extends Iterable<Comparable<?>> {
 	 * @param col index of the column to return
 	 * @return the specified column of the data source
 	 */
-	Column getColumn(int col);
+	// It is not possible to use this function with a generic type parameter,
+	// due to broken type inference prior to Java 8.
+	Column<?> getColumn(int col);
 
 	/**
 	 * Returns the data types of all columns.
@@ -64,11 +66,21 @@ public interface DataSource extends Iterable<Comparable<?>> {
 	 */
 	Statistics getStatistics();
 
+	DataSource getColumnStatistics(String key);
+
+	DataSource getRowStatistics(String key);
+
 	/**
 	 * Returns the number of rows of the data source.
 	 * @return number of rows in the data source.
 	 */
 	int getRowCount();
+
+	/**
+	 * Returns the name of this series.
+	 * @return a name string
+	 */
+	String getName();
 
 	/**
 	 * Returns the number of columns of the data source.
@@ -94,4 +106,6 @@ public interface DataSource extends Iterable<Comparable<?>> {
 	 * @param dataListener listener to be removed.
 	 */
 	void removeDataListener(DataListener dataListener);
+
+	Record getRecord(int row);
 }
