@@ -42,6 +42,9 @@ public interface Legend extends Container, Drawable, SettingsStorage {
 	size of the legend's symbols. The symbol size is defined relative to the
 	font height of the legend. */
 	Key SYMBOL_SIZE = new Key("legend.symbol.size"); //$NON-NLS-1$
+	/** Key for specifying the {@link java.awt.Paint} instance to be used to fill
+	 * the foreground color of the legend. */
+	Key LABEL_COLOR = new Key("legend.label.color");
 
 	/**
 	 * Adds the specified data source in order to display it.

@@ -1,3 +1,8 @@
+# Gradle temporary files
+.gradle
+# Gradle output folder
+build
+
 /gral-core/target
 /gral-build-tools/target
 /.idea
