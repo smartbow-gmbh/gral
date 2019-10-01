@@ -153,7 +153,7 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	@SuppressWarnings("serial")
 	public InteractivePanel(Drawable drawable) {
 		super(drawable);
-        listeners = new ArrayList<Listener>();
+		listeners = new ArrayList<>();
 		printerJob = PrinterJob.getPrinterJob();
 		printerJob.setPrintable(this);
 
@@ -252,25 +252,25 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 		setPannable(true);
 	}
 
-    public void addListener(Listener listener) {
-    	listeners.add(listener);
-    }
+	public void addListener(Listener listener) {
+		listeners.add(listener);
+	}
 
-    public void removeListener(Listener listener) {
-    	listeners.remove(listener);
-    }
+	public void removeListener(Listener listener) {
+		listeners.remove(listener);
+	}
 
-    protected void fireRowClicked(Row row) {
-    	for (Listener listener : listeners) {
-    		listener.onRowClick(row);
-    	}
-    }
+	protected void fireRowClicked(Row row) {
+		for (Listener listener : listeners) {
+			listener.onRowClick(row);
+		}
+	}
 
-    protected void fireMouseOver(Row row) {
-    	for (Listener listener : listeners) {
-    		listener.onMouseOver(row);
-    	}
-    }
+	protected void fireMouseOver(Row row) {
+		for (Listener listener : listeners) {
+			listener.onMouseOver(row);
+		}
+	}
 
 	/**
 	 * Method that returns the popup menu for a given mouse event. It will be
@@ -410,6 +410,7 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 	}
 
 	private class NavigationListener extends MouseAdapter {
+		private Row prevRow = null;
 
 		private Row getRow(Point point) {
 			Drawable drawable = getDrawable();
@@ -437,8 +438,6 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 			}
 		}
 
-		private Row prevRow = null;
-
 		@Override
 		public void mouseMoved(MouseEvent e) {
 			if (listeners.isEmpty()) {
@@ -455,7 +454,6 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 				}
 			}
 		}
-
 	}
 
 	/**
