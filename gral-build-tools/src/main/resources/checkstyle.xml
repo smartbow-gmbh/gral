@@ -24,8 +24,8 @@
 -->
 
 <!DOCTYPE module PUBLIC
-    "-//Puppy Crawl//DTD Check Configuration 1.2//EN"
-    "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
+          "-//Checkstyle//DTD Checkstyle Configuration 1.2//EN"
+          "https://checkstyle.org/dtds/configuration_1_2.dtd">
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="${checkstyle.severity}" default="warning"/>
@@ -33,7 +33,10 @@
     <module name="NewlineAtEndOfFile">
         <property name="severity" value="info"/>
     </module>
-
+    <module name="LineLength">
+        <property name="severity" value="info"/>
+        <property name="max" value="120"/>
+    </module>
     <module name="TreeWalker">
         <property name="tabWidth" value="4"/>
         <module name="JavadocType">
@@ -45,13 +48,6 @@
         </module>
         <module name="JavadocVariable">
             <property name="scope" value="protected"/>
-        </module>
-        <module name="LineLength">
-            <property name="severity" value="info"/>
-            <property name="max" value="100"/>
-        </module>
-        <module name="LineLength">
-            <property name="max" value="120"/>
         </module>
         <module name="NeedBraces"/>
         <module name="Regexp">
