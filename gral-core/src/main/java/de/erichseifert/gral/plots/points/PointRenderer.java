@@ -86,6 +86,21 @@ public interface PointRenderer {
 	void setValueVisible(boolean valueVisible);
 
 	/**
+	 * Returns whether the data value of a point is displayed as a
+	 * absolute value or not.
+	 * @return {@code true} when the value is absolute, otherwise
+	 * {@code false}.
+	 */
+	boolean isValueAbsoluteNumber();
+
+	/**
+	 * Returns whether the data value of a point will be absolute or not.
+	 * @param valueAbsoluteNumber {@code true} if the value should be absolute,
+	 * otherwise {@code false}.
+	 */
+	void setValueAbsoluteNumber(boolean valueAbsoluteNumber);
+
+	/**
 	 * Returns the index of the column that contains the displayed values.
 	 * @return Index of the column that contains the displayed values.
 	 */

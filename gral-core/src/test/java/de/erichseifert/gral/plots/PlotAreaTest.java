@@ -57,6 +57,11 @@ public class PlotAreaTest {
 		protected void drawPlot(DrawingContext context) {
 			isDrawn = true;
 		}
+
+		@Override
+		public Plot getPlot() {
+			return null;
+		}
 	}
 
 	@Before

@@ -56,6 +56,8 @@ public abstract class AbstractPointRenderer
 
 	/** Decides whether a value label are drawn at the point. */
 	private boolean valueVisible;
+	/** Decides whether the absolute value (as integer) of a point is displayed or not */
+	private boolean valueAbsoluteNumber;
 	/** Index of the column for the value label content. */
 	private int valueColumn;
 	/** Format of the value label content. */
@@ -97,6 +99,7 @@ public abstract class AbstractPointRenderer
 		color = new SingleColor(Color.BLACK);
 
 		valueVisible = false;
+		valueAbsoluteNumber = false;
 		valueColumn = 1;
 		valueLocation = Location.CENTER;
 		valueAlignmentX = 0.5;
@@ -179,6 +182,14 @@ public abstract class AbstractPointRenderer
 	@Override
 	public void setValueVisible(boolean valueVisible) {
 		this.valueVisible = valueVisible;
+	}
+
+	public boolean isValueAbsoluteNumber() {
+		return valueAbsoluteNumber;
+	}
+
+	public void setValueAbsoluteNumber(boolean valueAbsoluteNumber) {
+		this.valueAbsoluteNumber = valueAbsoluteNumber;
 	}
 
 	@Override

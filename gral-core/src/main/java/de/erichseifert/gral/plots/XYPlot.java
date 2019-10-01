@@ -456,9 +456,9 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 							Shape pointShape = pointRenderer.getPointShape(point.data);
 							Drawable pointDrawable = pointRenderer.getPoint(point.data, pointShape);
 							pointDrawable.draw(context);
+							plot.registerShape(pointShape, pointX + getX(), pointY + getY(), point.data.row);
 						}
 						graphics.setTransform(txOffset);
-						plot.registerShape(point.shape, pointX + getX(), pointY + getY(), point.data.row);
 					}
 					// Draw labels
 					for (DataPoint point : points) {

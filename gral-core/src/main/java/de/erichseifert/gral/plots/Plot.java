@@ -21,13 +21,12 @@
  */
 package de.erichseifert.gral.plots;
 
-import java.awt.Font;
-import java.awt.Paint;
-import java.awt.Stroke;
+import java.awt.*;
 import java.util.Collection;
 import java.util.List;
 
 import de.erichseifert.gral.data.DataSource;
+import de.erichseifert.gral.data.Row;
 import de.erichseifert.gral.graphics.Container;
 import de.erichseifert.gral.graphics.Drawable;
 import de.erichseifert.gral.graphics.Label;
@@ -308,5 +307,4 @@ public interface Plot extends Drawable, Container {
     Row getRowAt(Point point);
 
     void registerShape(Shape shape, double x, double y, Row row);
-
 }

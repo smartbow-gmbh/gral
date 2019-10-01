@@ -425,7 +425,7 @@ public class BarPlot extends XYPlot {
 				break;
 			}
 		}
-		getAxisRenderer(AXIS_Y).setSetting(AxisRenderer.TICKS_SPACING, tick);
+		getAxisRenderer(AXIS_Y).setTickSpacing(tick);
 	}
 
 	@Override

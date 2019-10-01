@@ -320,7 +320,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 				List<Axis> axes = asList(axis);
 				List<AxisRenderer> axisRenderers = asList(axisRenderer);
 				// Draw graphics
-                plot.unregisterDrawables();
+				plot.unregisterDrawables();
 				for (int rowIndex = 0; rowIndex < s.getRowCount(); rowIndex++) {
 					Row row = s.getRow(rowIndex);
 					PointData pointData = new PointData(
@@ -329,7 +329,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 					Drawable point = pointRenderer.getPoint(pointData, shape);
 					point.setBounds(bounds);
 					point.draw(context);
-                    plot.registerShape(shape, x, y, row);
+					plot.registerShape(shape, point.getX(), point.getY(), row);
 				}
 				// Draw labels
 				for (int rowIndex = 0; rowIndex < s.getRowCount(); rowIndex++) {
@@ -614,9 +614,6 @@ public class PiePlot extends AbstractPlot implements Navigable {
 		 */
 		protected void drawValueLabel(DrawingContext context, Slice slice,
 				double radius, Row row, int rowIndex) {
-			if (sum == 0.0) {
-				return;
-			}
 			Comparable<?> value = slice.end - slice.start;
 
 			// Formatting
@@ -628,8 +625,8 @@ public class PiePlot extends AbstractPlot implements Navigable {
 			// Text to display
 			String text = (format != null) ? format.format(value) : value.toString();
 
-			Boolean absoluteIntegerNumber = getSetting(VALUE_DISPLAY_ABSOLUTE_NUMBER);
-			if (absoluteIntegerNumber != null && absoluteIntegerNumber) {
+			boolean absoluteIntegerNumber = PieSliceRenderer.this.isValueAbsoluteNumber();
+			if (absoluteIntegerNumber) {
 				text = text + " (" + row.get(0) + ")";
 			}
 

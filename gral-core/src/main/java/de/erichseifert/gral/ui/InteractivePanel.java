@@ -415,12 +415,14 @@ public class InteractivePanel extends DrawablePanel implements Printable {
 			Drawable drawable = getDrawable();
 			if (drawable instanceof DrawableContainer) {
 				DrawableContainer c = (DrawableContainer) drawable;
-				Drawable drawableAt = c.getDrawableAt(point);
-				if (drawableAt instanceof PlotArea) {
-					PlotArea plotArea = (PlotArea) drawableAt;
-					Row row = plotArea.getPlot().getRowAt(point);
-					if (row != null) {
-						return row;
+				List<Drawable> drawablesAt = c.getDrawablesAt(point);
+				for(Drawable drawableAt : drawablesAt) {
+					if (drawableAt instanceof PlotArea) {
+						PlotArea plotArea = (PlotArea) drawableAt;
+						Row row = plotArea.getPlot().getRowAt(point);
+						if (row != null) {
+							return row;
+						}
 					}
 				}
 			}
