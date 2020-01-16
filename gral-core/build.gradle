@@ -112,4 +112,3 @@ uploadArchives {
 		}
 	}
 }
-signArchives.dependsOn(jar)
