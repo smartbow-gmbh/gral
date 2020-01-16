@@ -1,5 +1,3 @@
-import proguard.gradle.ProGuardTask
-
 description = 'GRAL core'
 
 buildscript {
@@ -10,7 +8,6 @@ buildscript {
 		}
 	}
 	dependencies {
-		classpath 'net.sf.proguard:proguard-gradle:6.0.+'
 		classpath 'net.saliman:gradle-cobertura-plugin:2.6.+'
 		classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.+'
 		classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:4.3.0'
@@ -47,31 +44,6 @@ task report {
 	}
 }
 
-task shrinkJar(type: ProGuardTask, dependsOn: jar) {
-	description = 'Uses ProGuard to reduce the code size of this project.'
-	group = 'Build'
-	// Configure ProGuard
-	configuration "${projectDir}/src/etc/proguard.conf"
-	target targetCompatibility.toString()
-	injars configurations.runtimeClasspath.resolve(), filter: '!META-INF/**'
-	injars jar.archivePath
-	outjars "${libsDir}/shrunk/${jar.archiveName}"
-	// Determine the location of the Java runtime (required for ProGuard)
-	def javaHome = System.getProperty('java.home')
-	if (JavaVersion.current() <= JavaVersion.VERSION_1_8) {
-		if (file("${javaHome}/lib/rt.jar").exists()) {
-			libraryjars "${javaHome}/lib/rt.jar"
-		} else if (file("${javaHome}/bundle/Classes/classes.jar").exists()) {
-			libraryjars "${javaHome}/bundle/Classes/classes.jar"
-		}
-	} else {
-		libraryjars "${javaHome}/jmods/java.base.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-		libraryjars "${javaHome}/jmods/java.desktop.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-		libraryjars "${javaHome}/jmods/java.sql.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-		libraryjars "${javaHome}/jmods/java.xml.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-	} 
-}
-
 task javadocJar(type: Jar) {
 	description = 'Assembles a jar archive containing the API doc.'
 	group = 'Build'
@@ -81,7 +53,7 @@ task javadocJar(type: Jar) {
 
 
 artifacts {
-	archives shrinkJar.getOutJarFileCollection().getSingleFile(), sourceJar, javadocJar
+	archives jar, sourceJar, javadocJar
 }
 
 signing {
@@ -140,4 +112,4 @@ uploadArchives {
 		}
 	}
 }
-signArchives.dependsOn(shrinkJar)
+signArchives.dependsOn(jar)
