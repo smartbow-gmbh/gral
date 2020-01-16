@@ -22,15 +22,16 @@ dependencies {
 
 buildscript {
 	repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
+					maven {
+						mavenCentral()
+						gradlePluginPortal()
+					}
 	}
 	dependencies {
 		classpath 'net.sf.proguard:proguard-gradle:6.0.+'
 		classpath 'net.saliman:gradle-cobertura-plugin:2.6.+'
 		classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.+'
-    classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:4.3.0'
+		classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:4.3.0'
 	}
 }
 
