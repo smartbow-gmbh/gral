@@ -1,7 +1,7 @@
 description = 'Free Java library for displaying plots'
 
 allprojects {
-	group = 'com.smartbow'
+	group = "${mvnGroup}"
 	version = "$nextReleaseVersion${isSnapshot == "true" ? "-SNAPSHOT" : ""}"
 
 	ext.inceptionYear = 2009
