@@ -22,10 +22,10 @@ dependencies {
 
 buildscript {
 	repositories {
-					maven {
-						mavenCentral()
-						gradlePluginPortal()
-					}
+    maven {
+      mavenCentral()
+      gradlePluginPortal()
+    }
 	}
 	dependencies {
 		classpath 'net.sf.proguard:proguard-gradle:6.0.+'
