@@ -360,7 +360,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 	/**
 	 * Data class for storing slice information in world units.
 	 */
-	protected static final class Slice {
+	public static final class Slice {
 		/** Value where the slice starts. */
 		public final double start;
 		/** Value where the slice ends. */
@@ -946,6 +946,14 @@ public class PiePlot extends AbstractPlot implements Navigable {
 	 */
 	public PointRenderer getPointRenderer(DataSource s) {
 		return pointRenderers.get(s);
+	}
+
+	/**
+	 * Returns all {@code PointRenderer}
+	 * @return PointRenderers
+	 */
+	public Collection<PointRenderer> getPointRenderers() {
+		return pointRenderers.values();
 	}
 
 	/**
