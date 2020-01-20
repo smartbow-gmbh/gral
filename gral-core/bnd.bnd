@@ -1,2 +1,3 @@
+Bundle-SymbolicName: com.smartbow.gral-core
 Export-Package: \
 	de.erichseifert.gral.*
