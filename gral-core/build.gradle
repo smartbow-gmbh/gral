@@ -62,6 +62,10 @@ signing {
 	sign configurations.archives
 }
 
+tasks.withType(Javadoc) {
+  options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 uploadArchives {
 	repositories {
 		mavenDeployer {
