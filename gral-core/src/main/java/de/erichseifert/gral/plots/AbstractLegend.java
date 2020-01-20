@@ -239,15 +239,16 @@ public abstract class AbstractLegend extends StylableContainer
         for (Row row : getEntries(source)) {
             String label = getLabel(row);
             Font font = this.<Font>getSetting(FONT);
-            Item item = getItem(row, this, label, font);
+            Paint paint = this.<Paint> getSetting(LABEL_COLOR);
+            Item item = getItem(row, this, label, font, paint);
             add(item);
             components.put(row, item);
         }
         invalidate();
     }
 
-    public Item getItem(Row row, LegendSymbolRenderer symbolRenderer, String labelText, Font font) {
-        return new Item(row, this, labelText, font, this.<Paint>getSetting(LABEL_COLOR));
+    public Item getItem(Row row, LegendSymbolRenderer symbolRenderer, String labelText, Font font, Paint paint) {
+        return new Item(row, this, labelText, font, paint);
     }
 
 	/**
