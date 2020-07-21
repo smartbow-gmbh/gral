@@ -23,6 +23,8 @@ steps:
   inputs:
     secureFile: 'signingkey.private.asc'
 - script: |-
+    GPG_TTY=$(tty)
+    export GPG_TTY
     sudo apt-get update
     sudo apt-get install gnupg
     mkdir -p $(Agent.HomeDirectory)/gpg
