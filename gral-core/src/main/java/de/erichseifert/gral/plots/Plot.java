@@ -302,5 +302,6 @@ public interface Plot extends Drawable, Container {
 	 */
 	void setLegendDistance(double distance);
 
+	// added by smartbow
     Row getRowAt(Point point);
 }

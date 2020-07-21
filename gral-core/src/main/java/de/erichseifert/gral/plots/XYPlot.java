@@ -444,6 +444,7 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 					Drawable drawable = lineRenderer.getLine(points, punchedLine);
 					drawable.draw(context);
 				}
+				// added by smartbow
 				plot.unregisterDrawables();	
 				if (!plot.getPointRenderers(s).isEmpty()) {
 					// Draw graphics
@@ -457,6 +458,7 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 							Shape pointShape = pointRenderer.getPointShape(point.data);
 							Drawable pointDrawable = pointRenderer.getPoint(point.data, pointShape);
 							pointDrawable.draw(context);
+							// added by smartbow
 							plot.registerTransformedShape(pointShape, graphicsCoord, point.data.row);
 						}
 						graphics.setTransform(txOffset);

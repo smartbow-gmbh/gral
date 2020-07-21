@@ -211,20 +211,25 @@ public abstract class AbstractPlot extends DrawableContainer
 
 	}
 
+	// added by smartbow
 	public void registerShape(Shape shape, Row row) {
 		shapes.add(new RowShape(shape, row));
 	}
 	
 	
+	// added by smartbow
 	public void registerTransformedShape(Shape shape, AffineTransform transform, Row row) {
 		Shape graphicsCoordShape = transform.createTransformedShape(shape);
 		this.registerShape(graphicsCoordShape, row);
 	}
 
+	// added by smartbow
 	public void unregisterDrawables() {
 		shapes.clear();
 	}
 
+	// added by smartbow
+	@Override
 	public Row getRowAt(Point point) {
 		int mouseX = point.x;
 		int mouseY = point.y;

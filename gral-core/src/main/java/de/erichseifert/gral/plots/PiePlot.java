@@ -994,7 +994,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 		return sum;
 	}
 
-	private static class PieData extends AbstractDataSource {
+	public static class PieData extends AbstractDataSource {
 		private final DataSource data;
 
 		public PieData(DataSource data) {
@@ -1049,7 +1049,17 @@ public class PiePlot extends AbstractPlot implements Navigable {
 			}
 			return null;
 		}
+		
+		// added by smartbow
+		public Comparable<?> getRaw(int col, int row) {
+			return this.data.get(col, row);
+		}
 
+		// added by smartbow
+		public Comparable<?> getRaw(int col, Row row) {
+			return this.getRaw(row.getIndex(), col);
+		}
+		
 		@Override
 		public int getRowCount() {
 			return data.getRowCount();
