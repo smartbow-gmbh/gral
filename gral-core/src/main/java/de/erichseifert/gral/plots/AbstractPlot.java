@@ -129,7 +129,8 @@ public abstract class AbstractPlot extends DrawableContainer
 	private Location legendLocation;
 	/** Distance of the legend to the plot area. */
 	private double legendDistance;
-
+	
+	// added by smartbow
     private Collection<RowShape> shapes;
 
 	/**
@@ -139,6 +140,7 @@ public abstract class AbstractPlot extends DrawableContainer
 	 */
 	public AbstractPlot(DataSource... series) {
 		super(new EdgeLayout());
+		// added by smartbow
 		shapes = new ArrayList<RowShape>();
 		dataVisible = new HashSet<>();
 
@@ -200,6 +202,7 @@ public abstract class AbstractPlot extends DrawableContainer
 		drawComponents(context);
 	}
 
+	// added by smartbow
 	private static class RowShape {
 		private Shape shape;
 		private Row row;
