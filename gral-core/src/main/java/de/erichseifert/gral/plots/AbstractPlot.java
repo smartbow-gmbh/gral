@@ -29,6 +29,8 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Stroke;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -200,20 +202,23 @@ public abstract class AbstractPlot extends DrawableContainer
 
 	private static class RowShape {
 		private Shape shape;
-		private double x, y;
 		private Row row;
 
-		public RowShape(Shape shape, double x, double y, Row row) {
+		public RowShape(Shape shape, Row row) {
 			this.shape = shape;
-			this.x = x;
-			this.y = y;
 			this.row = row;
 		}
 
 	}
 
-	public void registerShape(Shape shape, double x, double y, Row row) {
-		shapes.add(new RowShape(shape, x, y, row));
+	public void registerShape(Shape shape, Row row) {
+		shapes.add(new RowShape(shape, row));
+	}
+	
+	
+	public void registerTransformedShape(Shape shape, AffineTransform transform, Row row) {
+		Shape graphicsCoordShape = transform.createTransformedShape(shape);
+		this.registerShape(graphicsCoordShape, row);
 	}
 
 	public void unregisterDrawables() {
@@ -221,12 +226,10 @@ public abstract class AbstractPlot extends DrawableContainer
 	}
 
 	public Row getRowAt(Point point) {
+		int mouseX = point.x;
+		int mouseY = point.y;
+		Point p = new Point(mouseX, mouseY);
 		for (RowShape rowShape : shapes) {
-			int mouseX = point.x;
-			int mouseY = point.y;
-			mouseX = (int) (mouseX - rowShape.x);
-			mouseY = (int) (mouseY - rowShape.y);
-			Point p = new Point(mouseX, mouseY);
 			if (rowShape.shape.contains(p)) {
 				return rowShape.row;
 			}

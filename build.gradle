@@ -54,11 +54,11 @@ subprojects {
 		}
 	}
 
-	apply plugin: 'checkstyle'
-	checkstyle {
-		toolVersion "8.26"
-		configFile = file("${rootDir}/config/checkstyle.xml")
-	}
+//	apply plugin: 'checkstyle'
+//	checkstyle {
+//		toolVersion "8.26"
+//		configFile = file("${rootDir}/config/checkstyle.xml")
+//	}
 
 	apply plugin: 'pmd'
 	pmd {
@@ -70,8 +70,7 @@ subprojects {
 
 	task sourceJar(type: Jar) {
 		description = 'Assembles a jar archive containing the source code of the main classes.'
-		group = 'Build'
-		from sourceSets.main.allJava
+		from sourceSets.main.allSource
 		classifier 'sources'
 	}
 }

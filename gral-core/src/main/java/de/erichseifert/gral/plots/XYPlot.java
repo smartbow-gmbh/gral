@@ -452,11 +452,12 @@ public class XYPlot extends AbstractPlot implements Navigable, AxisListener {
 						double pointX = pos.get(PointND.X);
 						double pointY = pos.get(PointND.Y);
 						graphics.translate(pointX, pointY);
+						AffineTransform graphicsCoord = graphics.getTransform();
 						for (PointRenderer pointRenderer : plot.getPointRenderers(s)) {
 							Shape pointShape = pointRenderer.getPointShape(point.data);
 							Drawable pointDrawable = pointRenderer.getPoint(point.data, pointShape);
 							pointDrawable.draw(context);
-							plot.registerShape(pointShape, pointX + getX(), pointY + getY(), point.data.row);
+							plot.registerTransformedShape(pointShape, graphicsCoord, point.data.row);
 						}
 						graphics.setTransform(txOffset);
 					}

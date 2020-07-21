@@ -302,9 +302,5 @@ public interface Plot extends Drawable, Container {
 	 */
 	void setLegendDistance(double distance);
 
-    void unregisterDrawables();
-
     Row getRowAt(Point point);
-
-    void registerShape(Shape shape, double x, double y, Row row);
 }

@@ -322,6 +322,7 @@ public class PiePlot extends AbstractPlot implements Navigable {
 				List<AxisRenderer> axisRenderers = asList(axisRenderer);
 				// Draw graphics
 				plot.unregisterDrawables();
+				AffineTransform graphicsCoord = graphics.getTransform();
 				for (int rowIndex = 0; rowIndex < s.getRowCount(); rowIndex++) {
 					Row row = s.getRow(rowIndex);
 					PointData pointData = new PointData(
@@ -330,7 +331,8 @@ public class PiePlot extends AbstractPlot implements Navigable {
 					Drawable point = pointRenderer.getPoint(pointData, shape);
 					point.setBounds(bounds);
 					point.draw(context);
-					plot.registerShape(shape, point.getX(), point.getY(), row);
+					
+					plot.registerTransformedShape(shape, graphicsCoord, row);
 				}
 				// Draw labels
 				for (int rowIndex = 0; rowIndex < s.getRowCount(); rowIndex++) {
